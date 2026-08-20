@@ -1,0 +1,9 @@
+name = "lively-dew-924c"
+main = "worker.js"
+compatibility_date = "2026-08-18"
+
+# Bindings (values are not stored here — set with `wrangler secret put <NAME>`
+# or via the Cloudflare dashboard):
+#   MAILERLITE_API_KEY  - MailerLite API key, used by /mailerlite-subscribe
+#   STRIPE_SECRET_KEY   - Stripe secret key, used by /verify-purchase to
+#                         retrieve and validate Checkout Sessions
