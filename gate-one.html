@@ -398,6 +398,11 @@ document.getElementById('buy-section').style.display = 'none';
 document.getElementById('toolkit-section').style.display = 'block';
 }
 })();
+
+// Path progress: remember this step
+try {
+  localStorage.setItem('sg_last_step', JSON.stringify({step:'gate1', label:'Gate One: The Call', url:'gate-one.html'}));
+} catch(e) {}
 </script>
 </body>
 </html>

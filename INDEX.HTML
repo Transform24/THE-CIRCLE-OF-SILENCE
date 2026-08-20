@@ -31,6 +31,9 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
 #progressBar{position:fixed;top:0;left:0;right:0;height:1px;background:var(--border);z-index:200;display:none;}
 #progressFill{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold),var(--gold-light));transition:width 0.6s cubic-bezier(0.4,0,0.2,1);}
+.resume-banner{display:none;border:1px solid var(--gold-dim);background:rgba(201,169,110,0.06);padding:14px 20px;text-align:center;margin-bottom:20px}
+.resume-banner a{color:var(--gold-light);font-size:12px;letter-spacing:1px;text-decoration:none}
+.resume-banner a:hover{color:var(--gold);}
 
 /* LANDING */
 #screen-landing{position:relative;align-items:stretch;justify-content:stretch;min-height:100vh;}
@@ -386,6 +389,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     <img class="banner-img" src="banner.png" alt="The Quiet Authority — Sanctuary Grace Ministry">
     <div class="banner-overlay"></div>
     <div class="landing-content">
+      <div class="resume-banner" id="resumeBanner"><a href="#" id="resumeLink">Continue where you left off: <span id="resumeLabel"></span> →</a></div>
       <div class="ministry-label">Sanctuary Grace Ministry</div>
       <h1 class="landing-title serif">The Quiet <em>Authority</em></h1>
       <div class="gold-rule"></div>
@@ -605,7 +609,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
           <div class="cta-feature">Prayer support & accountability community</div>
           <div class="cta-feature">12-week personal transformation roadmap</div>
         </div>
-        <button class="btn-begin" onclick="joinCircle()" style="display:inline-block;"><span>Join the Waitlist</span></button>
+        <button class="btn-begin" onclick="joinCircle()" style="display:inline-block;"><span>Enter the Circle of Silence</span></button>
       </div>
     </div>
   </div>
@@ -893,8 +897,22 @@ function acceptJesus(){
 }
 
 function joinCircle(){
-  window.open('https://beacons.ai/sanctuarygrace', '_blank');
+  window.location.href = 'the-secret-place.html';
 }
+
+// Path progress: remember this step, and offer to resume further-along steps
+var SG_STEP_ORDER = ['tqa','secret-place','how-to-pray','habit-tracker','gate0','gate1','gate2','gate3','gate4','gate5','gate6'];
+(function(){
+  try {
+    var savedStep = JSON.parse(localStorage.getItem('sg_last_step') || 'null');
+    if (savedStep && SG_STEP_ORDER.indexOf(savedStep.step) > SG_STEP_ORDER.indexOf('tqa')) {
+      document.getElementById('resumeLabel').textContent = savedStep.label;
+      document.getElementById('resumeLink').href = savedStep.url;
+      document.getElementById('resumeBanner').style.display = 'block';
+    }
+    localStorage.setItem('sg_last_step', JSON.stringify({step:'tqa', label:'The Quiet Authority', url:'INDEX.HTML'}));
+  } catch(e) {}
+})();
 
 // 7-DAY EXPERIENCE (profile-specific days injected at results render)
 const SEVEN_DAYS = {

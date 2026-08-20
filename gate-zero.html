@@ -287,6 +287,11 @@ document.querySelectorAll('#pockets-group input[type="radio"]').forEach(function
   if (radio.value === savedPocket) radio.checked = true;
   radio.addEventListener('change', function() { localStorage.setItem(pocketKey, radio.value); });
 });
+
+// Path progress: remember this step
+try {
+  localStorage.setItem('sg_last_step', JSON.stringify({step:'gate0', label:'Gate Zero: The Threshold', url:'gate-zero.html'}));
+} catch(e) {}
 </script>
 </body>
 </html>

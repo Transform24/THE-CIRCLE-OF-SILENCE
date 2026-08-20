@@ -397,6 +397,11 @@ document.getElementById('buy-section').style.display = 'none';
 document.getElementById('toolkit-section').style.display = 'block';
 }
 })();
+
+// Path progress: remember this step
+try {
+  localStorage.setItem('sg_last_step', JSON.stringify({step:'gate6', label:'Gate Six: Becoming', url:'gate-six.html'}));
+} catch(e) {}
 </script>
 </body>
 </html>
