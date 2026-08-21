@@ -19,13 +19,24 @@ const GATE_PAYMENT_LINKS = {
   six: 'https://buy.stripe.com/eVq8wP8Ba0hHgDqej0cQU0B',
 };
 
-// Update this once the site's real origin is confirmed (custom domain or
-// the GitHub Pages URL). Requests from origins not in this list still get
-// a valid JSON response, just without CORS headers, so the browser blocks
-// the read.
+// Confirmed against gate-one.html's canonical/og:url tags. Requests from
+// origins not in this list still get a valid JSON response, just without
+// CORS headers, so the browser blocks the read.
 const ALLOWED_ORIGINS = new Set([
-  'https://transform24.github.io',
+  'https://sanctuary-grace.com',
 ]);
+
+// Each gate's own MailerLite "Buyer" group (from the MailerLite dashboard).
+// Joining one of these groups is what triggers that gate's already-built
+// 11-step welcome sequence automation (currently disabled, waiting).
+const GATE_MAILERLITE_GROUPS = {
+  one: '193979375492793939',
+  two: '194025316835919214',
+  three: '193578269634725820',
+  four: '193578191164540344',
+  five: '193578072636655259',
+  six: '193576760955110675',
+};
 
 const SESSION_ID_RE = /^cs_(test|live)_[A-Za-z0-9]+$/;
 
@@ -49,6 +60,19 @@ function gateForPaymentLinkUrl(linkUrl) {
     if (url === linkUrl) return gate;
   }
   return null;
+}
+
+async function addToMailerLiteGroup(env, email, groupId) {
+  if (!env.MAILERLITE_API_KEY) return;
+  await fetch('https://connect.mailerlite.com/api/subscribers', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: 'Bearer ' + env.MAILERLITE_API_KEY,
+    },
+    body: JSON.stringify({ email, groups: [groupId] }),
+  });
 }
 
 async function handleVerifyPurchase(request, env, origin) {
@@ -100,6 +124,19 @@ async function handleVerifyPurchase(request, env, origin) {
   }
   if (!gate) {
     return json({ verified: false, error: 'unknown_gate' }, 402, origin);
+  }
+
+  const buyerEmail = session.customer_details && session.customer_details.email;
+  const groupId = GATE_MAILERLITE_GROUPS[gate];
+  if (buyerEmail && groupId) {
+    // Joining this group is what fires that gate's welcome sequence in
+    // MailerLite. Fire-and-forget: a MailerLite hiccup shouldn't block the
+    // buyer from seeing the toolkit they already paid for.
+    try {
+      await addToMailerLiteGroup(env, buyerEmail, groupId);
+    } catch (err) {
+      // swallow - unlocking the purchased content matters more than this
+    }
   }
 
   return json(
