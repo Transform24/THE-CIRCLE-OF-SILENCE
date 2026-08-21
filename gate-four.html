@@ -380,12 +380,32 @@ if (el) { try { el.value = localStorage.getItem(k) || ''; } catch(e) {} }
 });
 })();
 
-// Gate state - matches gate-three.html param check logic exactly
+// Gate state - unlocked only after server-side verification via the lively-dew-924c
+// Worker's /verify-purchase route. The old client-only "?purchased=gate4" param is
+// no longer trusted by itself.
 (function() {
-var params = new URLSearchParams(window.location.search);
-if (params.get('purchased') === 'gate4') {
+var GATE = 'four';
+var WORKER = 'https://lively-dew-924c.tdwdemp.workers.dev';
+function unlock() {
 document.getElementById('buy-section').style.display = 'none';
 document.getElementById('toolkit-section').style.display = 'block';
+}
+var params = new URLSearchParams(window.location.search);
+var sessionId = params.get('session_id');
+if (sessionId) {
+fetch(WORKER + '/verify-purchase?session_id=' + encodeURIComponent(sessionId))
+.then(function(r) { return r.json(); })
+.then(function(data) {
+if (data.verified && data.gate === GATE) {
+try { localStorage.setItem('gate4_verified', '1'); } catch(e) {}
+unlock();
+}
+})
+.catch(function() {});
+} else {
+try {
+if (localStorage.getItem('gate4_verified') === '1') { unlock(); }
+} catch(e) {}
 }
 })();
 </script>
