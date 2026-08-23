@@ -69,6 +69,10 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 
 .gate-btn{display:inline-block;background:#C9A84C;color:#0d0d0d;font-family:sans-serif;font-size:11px;letter-spacing:4px;text-transform:uppercase;padding:18px 48px;text-decoration:none;cursor:pointer;transition:opacity 0.25s;border:none;width:100%;max-width:380px}
 .gate-btn:hover{opacity:0.88}
+.gate-input{display:block;margin:0 auto 14px;width:100%;max-width:380px;padding:15px 18px;background:#0d0d0d;border:1px solid #C9A84C55;color:#F5F0E8;font-family:sans-serif;font-size:13px;font-weight:300;outline:none;transition:border-color 0.25s}
+.gate-input::placeholder{color:#F5F0E855}
+.gate-input:focus{border-color:#C9A84C}
+.gate-confirm{font-size:13px;color:#C9A84C;font-family:sans-serif;font-weight:300;letter-spacing:0.02em}
 .gate-price{font-size:11px;color:#F5F0E822;font-family:sans-serif;margin-top:14px;letter-spacing:1px}
 
 .tool-section{padding:48px 0 0}
@@ -150,7 +154,9 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 <p class="buy-eyebrow">Stay Connected</p>
 <h2 class="buy-title">Save Your <em>Progress</em></h2>
 <p class="buy-sub">Your Brain Dump and Checklist below are only saved on this device. Enter your email and I will send you a copy to keep, along with a preview of what is next.</p>
-<a href="https://tdwdemp.systeme.io/2582a435" class="gate-btn">Save My Progress</a>
+<input type="email" class="gate-input" id="progressEmail" placeholder="Your email address">
+<button type="button" class="gate-btn" id="progressBtn" onclick="saveProgress()">Save My Progress</button>
+<p class="gate-confirm" id="progressConfirm" style="display:none">Check your inbox — your copy is on its way.</p>
 </div>
 </div>
 
@@ -287,6 +293,26 @@ document.querySelectorAll('#pockets-group input[type="radio"]').forEach(function
   if (radio.value === savedPocket) radio.checked = true;
   radio.addEventListener('change', function() { localStorage.setItem(pocketKey, radio.value); });
 });
+
+const WORKER_URL = 'https://lively-dew-924c.tdwdemp.workers.dev';
+function addToMailerLite(email, name, groupKey) {
+  if (!email) return;
+  fetch(WORKER_URL + '/mailerlite-subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email, name: name || '', groupKey: groupKey })
+  }).catch(function() {});
+}
+
+function saveProgress() {
+  const emailField = document.getElementById('progressEmail');
+  const email = emailField.value.trim();
+  if (!email || !email.includes('@')) { emailField.style.borderColor = '#C1593C'; return; }
+  addToMailerLite(email, '', 'gate0');
+  emailField.style.display = 'none';
+  document.getElementById('progressBtn').style.display = 'none';
+  document.getElementById('progressConfirm').style.display = 'block';
+}
 </script>
 </body>
 </html>

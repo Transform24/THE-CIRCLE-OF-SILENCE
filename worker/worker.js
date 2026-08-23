@@ -159,6 +159,8 @@ async function handleMailerliteSubscribe(request, env) {
     C: '196101708750783558',
     D: '196101710880441776',
     NB: '196101713496639044',
+    gate0: '194025314623424492',
+    secretplace: '192667224052336080',
   };
 
   const { email, name, groupKey } = await request.json();
