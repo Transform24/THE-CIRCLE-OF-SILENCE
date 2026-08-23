@@ -152,7 +152,18 @@ async function handleVerifyPurchase(request, env, origin) {
   );
 }
 
-async function handleMailerliteSubscribe(request, env) {
+async function handleMailerliteSubscribe(request, env, origin) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        ...corsHeaders(origin),
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
+  }
+
   const MAILERLITE_GROUPS = {
     A: '196101704591083355',
     B: '196101706647340497',
@@ -166,7 +177,7 @@ async function handleMailerliteSubscribe(request, env) {
   const { email, name, groupKey } = await request.json();
   const groupId = MAILERLITE_GROUPS[groupKey];
   if (!email || !groupId) {
-    return new Response('Bad request', { status: 400 });
+    return new Response('Bad request', { status: 400, headers: corsHeaders(origin) });
   }
   await fetch('https://connect.mailerlite.com/api/subscribers', {
     method: 'POST',
@@ -177,7 +188,7 @@ async function handleMailerliteSubscribe(request, env) {
     },
     body: JSON.stringify({ email, fields: { name: name || '' }, groups: [groupId] }),
   });
-  return new Response('OK', { status: 200 });
+  return new Response('OK', { status: 200, headers: corsHeaders(origin) });
 }
 
 export default {
@@ -185,8 +196,8 @@ export default {
     const url = new URL(request.url);
     const origin = request.headers.get('Origin');
 
-    if (url.pathname === '/mailerlite-subscribe' && request.method === 'POST') {
-      return handleMailerliteSubscribe(request, env);
+    if (url.pathname === '/mailerlite-subscribe' && (request.method === 'POST' || request.method === 'OPTIONS')) {
+      return handleMailerliteSubscribe(request, env, origin);
     }
 
     if (url.pathname === '/verify-purchase') {
