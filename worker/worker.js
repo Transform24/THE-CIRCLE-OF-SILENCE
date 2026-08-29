@@ -7,7 +7,8 @@
 
 const STRIPE_API = 'https://api.stripe.com/v1';
 
-// Each gate sells through its own Stripe Payment Link (see gate-*.html).
+// Each gate sells through its own Stripe Payment Link (see THE-QUIET-AUTHORITY's
+// gate-*.html — this repo no longer keeps its own copies, see worker/README.md).
 // A verified Checkout Session's payment_link.url is matched against this
 // map to determine which gate the buyer paid for.
 const GATE_PAYMENT_LINKS = {
@@ -19,9 +20,10 @@ const GATE_PAYMENT_LINKS = {
   six: 'https://buy.stripe.com/eVq8wP8Ba0hHgDqej0cQU0B',
 };
 
-// Confirmed against gate-one.html's canonical/og:url tags. Requests from
-// origins not in this list still get a valid JSON response, just without
-// CORS headers, so the browser blocks the read.
+// Confirmed against THE-QUIET-AUTHORITY's gate-one.html canonical/og:url
+// tags (the copy actually served at this domain — see worker/README.md).
+// Requests from origins not in this list still get a valid JSON response,
+// just without CORS headers, so the browser blocks the read.
 const ALLOWED_ORIGINS = new Set([
   'https://sanctuary-grace.com',
 ]);
