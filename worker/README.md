@@ -65,18 +65,38 @@ wrangler deploy
 ## Notes / assumptions to confirm
 
 - `ALLOWED_ORIGINS` in `worker.js` is set to `https://sanctuary-grace.com`,
-  confirmed against the canonical/`og:url` tags in `gate-one.html`. Update it
-  if the production domain ever changes.
-- Gate → Stripe Payment Link mapping is read from the `href`s in
-  `gate-one.html` through `gate-six.html`. If those links change, update
-  `GATE_PAYMENT_LINKS` in `worker.js` to match.
-- All six gate pages now call `/verify-purchase?session_id=...` when a
-  `session_id` query param is present (see the bottom `<script>` block of
-  each `gate-*.html`), and cache a successful verification in
-  `localStorage` so a returning buyer doesn't need the param on every visit.
-  **This still requires each Stripe Payment Link's "after payment" redirect
-  to be set to append `?session_id={CHECKOUT_SESSION_ID}`** to the matching
-  gate page URL (e.g. `https://sanctuary-grace.com/gate-one.html?session_id={CHECKOUT_SESSION_ID}`
+  confirmed against the canonical/`og:url` tags in THE-QUIET-AUTHORITY's
+  `gate-one.html` (the copy actually served at that domain — see "Gate pages
+  live elsewhere" below). Update it if the production domain ever changes.
+- Gate → Stripe Payment Link mapping (`GATE_PAYMENT_LINKS` in `worker.js`)
+  was originally read from the `href`s in `gate-one.html` through
+  `gate-six.html`. If those links ever change, update `GATE_PAYMENT_LINKS`
+  to match against THE-QUIET-AUTHORITY's copies (see below) — this repo no
+  longer carries its own.
+- All six gate pages call `/verify-purchase?session_id=...` when a
+  `session_id` query param is present, and cache a successful verification
+  in `localStorage` so a returning buyer doesn't need the param on every
+  visit. **This still requires each Stripe Payment Link's "after payment"
+  redirect to be set to append `?session_id={CHECKOUT_SESSION_ID}`** to the
+  matching gate page URL (e.g.
+  `https://sanctuary-grace.com/gate-one.html?session_id={CHECKOUT_SESSION_ID}`
   for Gate One) — that's a per-Payment-Link setting in the Stripe dashboard,
   outside this repo, and hasn't been confirmed. Without it, `session_id`
   never reaches the gate page and nothing auto-unlocks.
+
+## Gate pages live elsewhere
+
+`gate-one.html` through `gate-six.html` used to be duplicated here and in
+THE-QUIET-AUTHORITY, which is what's actually deployed to
+`sanctuary-grace.com` (this repo has no `CNAME` and no Pages deployment of
+its own — it never served the duplicates it kept). The two copies drifted:
+a paywall fix landed here first and, because nothing else read from this
+repo's copies, missed the live site until it was ported to
+THE-QUIET-AUTHORITY separately (PR #51 there).
+
+To stop that from happening again, this repo's duplicates were deleted.
+THE-QUIET-AUTHORITY's copies are the only ones that exist now — edit gate
+content there, not here. This repo stays scoped to the Worker (`worker.js`,
+this README, `wrangler.toml`), which doesn't need the HTML files at all;
+`GATE_PAYMENT_LINKS` and `GATE_MAILERLITE_GROUPS` are already
+self-contained constants in `worker.js`.
