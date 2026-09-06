@@ -4,6 +4,9 @@
 //   POST /mailerlite-subscribe  - adds a subscriber to a MailerLite group
 //   GET  /verify-purchase       - verifies a Stripe Checkout Session and
 //                                 reports which gate it paid for
+//   GET  /restore-access        - looks up which gates an email has already
+//                                 paid for, for a buyer restoring access on
+//                                 a new device/browser
 
 const STRIPE_API = 'https://api.stripe.com/v1';
 
@@ -41,6 +44,7 @@ const GATE_MAILERLITE_GROUPS = {
 };
 
 const SESSION_ID_RE = /^cs_(test|live)_[A-Za-z0-9]+$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function corsHeaders(origin) {
   const headers = { Vary: 'Origin' };
@@ -154,6 +158,52 @@ async function handleVerifyPurchase(request, env, origin) {
   );
 }
 
+async function emailInMailerLiteGroup(env, email, groupId) {
+  const target = email.trim().toLowerCase();
+  let url = `https://connect.mailerlite.com/api/groups/${groupId}/subscribers?limit=100`;
+  for (let page = 0; page < 20 && url; page++) {
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json', Authorization: 'Bearer ' + env.MAILERLITE_API_KEY },
+    });
+    if (!res.ok) return false;
+    const body = await res.json();
+    const hit = (body.data || []).some((s) => s.email && s.email.toLowerCase() === target);
+    if (hit) return true;
+    url = body.links && body.links.next ? body.links.next : null;
+  }
+  return false;
+}
+
+// Lets a buyer on a new device/browser recover which gates they've already
+// paid for, by email, with no password or account system: scans each gate's
+// MailerLite buyer group (joined by /verify-purchase on a confirmed Stripe
+// purchase) for the given email.
+async function handleRestoreAccess(request, env, origin) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        ...corsHeaders(origin),
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
+  }
+  if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405, origin);
+
+  const email = new URL(request.url).searchParams.get('email');
+  if (!email || !EMAIL_RE.test(email)) return json({ error: 'invalid_email' }, 400, origin);
+  if (!env.MAILERLITE_API_KEY) return json({ error: 'not_configured' }, 503, origin);
+
+  const unlockedGates = [];
+  for (const gate of Object.keys(GATE_MAILERLITE_GROUPS)) {
+    try {
+      if (await emailInMailerLiteGroup(env, email, GATE_MAILERLITE_GROUPS[gate])) unlockedGates.push(gate);
+    } catch (err) {}
+  }
+  return json({ unlockedGates }, 200, origin);
+}
+
 async function handleMailerliteSubscribe(request, env, origin) {
   if (request.method === 'OPTIONS') {
     return new Response(null, {
@@ -204,6 +254,10 @@ export default {
 
     if (url.pathname === '/verify-purchase') {
       return handleVerifyPurchase(request, env, origin);
+    }
+
+    if (url.pathname === '/restore-access') {
+      return handleRestoreAccess(request, env, origin);
     }
 
     return new Response('Not found', { status: 404 });

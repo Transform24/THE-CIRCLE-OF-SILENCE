@@ -35,6 +35,25 @@ directory brings it under version control.
   a failed group-join is currently silent; if buyers report not receiving
   their welcome sequence, check the Worker's Cloudflare logs.
 
+- `GET /restore-access?email=...` — lets a buyer on a new device/browser
+  recover which gates they've already paid for, by email, with no password
+  or account system. Scans each gate's MailerLite "Buyer" group
+  (`GATE_MAILERLITE_GROUPS`) for the given email and returns which gates it
+  was found in. The client mirrors the result into each gate's existing
+  `gate{N}_verified` localStorage key (see `gate-one.html` in
+  THE-QUIET-AUTHORITY) rather than this Worker setting anything itself.
+
+  Responses:
+  - `200 { unlockedGates: ["one", "three", ...] }` (empty array if none)
+  - `4xx/5xx { error }` for a missing/invalid `email` (`invalid_email`) or a
+    missing `MAILERLITE_API_KEY` (`not_configured`)
+
+  Paginates each group's subscriber list (100 per page, up to 20 pages) to
+  find a match. If any single gate's buyer group grows past a couple
+  hundred subscribers, replace that scan with a server-side email filter —
+  confirm the exact filter syntax against MailerLite's current API docs
+  first, don't guess it.
+
 ## Required secrets
 
 Set these on the Worker (dashboard → Settings → Variables, or
