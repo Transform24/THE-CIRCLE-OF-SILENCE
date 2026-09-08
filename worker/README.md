@@ -35,6 +35,22 @@ directory brings it under version control.
   a failed group-join is currently silent; if buyers report not receiving
   their welcome sequence, check the Worker's Cloudflare logs.
 
+- `GET /secret-place/download?session_id=cs_...` — verifies a Stripe
+  Checkout Session against the Secret Place payment link
+  (`SECRET_PLACE_PAYMENT_LINK`) and, if paid, streams back
+  `The-Secret-Place-Architecture-of-Intimacy.pdf` (embedded in `worker.js`
+  as `SECRET_PLACE_PDF_BASE64`) as the response body, and adds the buyer's
+  email to the Secret Place MailerLite group (`SECRET_PLACE_MAILERLITE_GROUP`).
+  This route existed only in the live deployment and was missing from this
+  repo's `worker.js` until it was ported back in — see git history.
+
+  Responses:
+  - `200` — PDF bytes, `Content-Type: application/pdf`,
+    `Content-Disposition: attachment`
+  - `4xx/5xx { verified: false, error }` for the same error shapes as
+    `/verify-purchase`, plus `not_paid` if the session didn't pay via the
+    Secret Place payment link specifically.
+
 - `GET /restore-access?email=...` — lets a buyer on a new device/browser
   recover which gates they've already paid for, by email, with no password
   or account system. Scans each gate's MailerLite "Buyer" group
