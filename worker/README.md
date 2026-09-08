@@ -7,7 +7,10 @@ directory brings it under version control.
 ## Routes
 
 - `POST /mailerlite-subscribe` — adds an email to a MailerLite group.
-  Body: `{ "email": "...", "name": "...", "groupKey": "A" | "B" | "C" | "D" | "NB" }`.
+  Body: `{ "email": "...", "name": "...", "groupKey": "A" | "B" | "C" | "D" | "NB" | "gate0" | "secretplace" | "namesofgod" }`.
+  `namesofgod` gates the free Hebrew Names of God reference guide on
+  `names-of-god.html` in THE-QUIET-AUTHORITY, group id `198005637470225771`
+  ("Names of God — Reference Guide" in MailerLite).
 - `GET /verify-purchase?session_id=cs_...` — verifies a Stripe Checkout
   Session (created via one of the gate payment links), returns which gate
   it paid for, and — if the session's buyer email is present — adds that
