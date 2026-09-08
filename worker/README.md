@@ -35,6 +35,41 @@ directory brings it under version control.
   a failed group-join is currently silent; if buyers report not receiving
   their welcome sequence, check the Worker's Cloudflare logs.
 
+- `GET /secret-place/download?session_id=cs_...` — verifies a Stripe
+  Checkout Session against the Secret Place payment link
+  (`SECRET_PLACE_PAYMENT_LINK`) and, if paid, streams back
+  `The-Secret-Place-Architecture-of-Intimacy.pdf` (embedded in `worker.js`
+  as `SECRET_PLACE_PDF_BASE64`) as the response body, and adds the buyer's
+  email to the Secret Place MailerLite group (`SECRET_PLACE_MAILERLITE_GROUP`).
+  This route existed only in the live deployment and was missing from this
+  repo's `worker.js` until it was ported back in — see git history.
+
+  Responses:
+  - `200` — PDF bytes, `Content-Type: application/pdf`,
+    `Content-Disposition: attachment`
+  - `4xx/5xx { verified: false, error }` for the same error shapes as
+    `/verify-purchase`, plus `not_paid` if the session didn't pay via the
+    Secret Place payment link specifically.
+
+- `GET /restore-access?email=...` — lets a buyer on a new device/browser
+  recover which gates they've already paid for, by email, with no password
+  or account system. Scans each gate's MailerLite "Buyer" group
+  (`GATE_MAILERLITE_GROUPS`) for the given email and returns which gates it
+  was found in. The client mirrors the result into each gate's existing
+  `gate{N}_verified` localStorage key (see `gate-one.html` in
+  THE-QUIET-AUTHORITY) rather than this Worker setting anything itself.
+
+  Responses:
+  - `200 { unlockedGates: ["one", "three", ...] }` (empty array if none)
+  - `4xx/5xx { error }` for a missing/invalid `email` (`invalid_email`) or a
+    missing `MAILERLITE_API_KEY` (`not_configured`)
+
+  Paginates each group's subscriber list (100 per page, up to 20 pages) to
+  find a match. If any single gate's buyer group grows past a couple
+  hundred subscribers, replace that scan with a server-side email filter —
+  confirm the exact filter syntax against MailerLite's current API docs
+  first, don't guess it.
+
 ## Required secrets
 
 Set these on the Worker (dashboard → Settings → Variables, or
