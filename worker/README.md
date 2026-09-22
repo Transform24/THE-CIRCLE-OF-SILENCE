@@ -54,6 +54,17 @@ directory brings it under version control.
     `/verify-purchase`, plus `not_paid` if the session didn't pay via the
     Secret Place payment link specifically.
 
+- `GET /names-of-god/download?session_id=cs_...` — same flow as
+  `/secret-place/download` (both run through `handlePaidPdfDownload`), for
+  the full 41-page *Names & Attributes of God* guide ($19). Streams back
+  `The-Names-and-Attributes-of-God.pdf` (embedded as
+  `NAMES_OF_GOD_PDF_BASE64`) when the session was paid through
+  `NAMES_OF_GOD_PAYMENT_LINK`. Until that constant holds the live Payment
+  Link URL, it answers `503 { verified: false, error: "not_configured" }`.
+  Buyers join `NAMES_OF_GOD_MAILERLITE_GROUP` when it is set; blank skips
+  the join. The free Part One sample is a static file on the site, gated by
+  the existing `namesofgod` email signup, not by this route.
+
 - `GET /restore-access?email=...` — lets a buyer on a new device/browser
   recover which gates they've already paid for, by email, with no password
   or account system. Scans each gate's MailerLite "Buyer" group
