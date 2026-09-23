@@ -93,12 +93,36 @@ key exposed. Grace needs to set both directly:
 from this directory, or via the Cloudflare dashboard → Workers → lively-dew-924c
 → Settings → Variables.
 
+### Rotating the Stripe key
+
+Stripe runs in live mode. If a secret key is ever pasted anywhere in plain
+text (chat, doc, screenshot), roll it: Stripe Dashboard → Developers → API
+keys → Roll key. Then re-bind the new live key from this directory with
+`wrangler secret put STRIPE_SECRET_KEY` and redeploy. The key lives only as
+that Worker secret — never in source, a committed `.env`, or a page.
+
 ## Deploying
 
 ```
 cd worker
 wrangler deploy
 ```
+
+## Pre-launch check
+
+```
+STRIPE_SECRET_KEY=sk_live_... node worker/check-live.mjs
+```
+
+Reads the live Payment Links and fails on any gate whose link in
+`GATE_PAYMENT_LINKS` is missing or deactivated, or whose after-payment
+redirect isn't
+`https://sanctuary-grace.com/gate-{one..six}.html?session_id={CHECKOUT_SESSION_ID}`.
+It also confirms the deployed Worker has `STRIPE_SECRET_KEY` bound. A
+restricted key with Payment Links read access is enough. After it passes,
+the only remaining check is a real purchase: buy one gate, confirm the
+redirect lands on that gate with `gate{N}_verified` = `1` in localStorage,
+then refund.
 
 ## Notes / assumptions to confirm
 
