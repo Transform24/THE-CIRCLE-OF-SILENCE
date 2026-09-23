@@ -157,19 +157,46 @@ then refund.
   outside this repo, and hasn't been confirmed. Without it, `session_id`
   never reaches the gate page and nothing auto-unlocks.
 
-## Gate pages live elsewhere
+## Gate pages live elsewhere — but this repo IS also served, correction 2026-09-23
+
+**The claim this section used to make — "this repo has no CNAME and no
+Pages deployment of its own" — was wrong, and was verified wrong by
+checking GitHub's own Actions history directly, not by guessing.** This
+repo has an active `pages-build-deployment` workflow with 25 successful
+runs, most recently 2026-09-08, deploying from `main`. With no `CNAME`
+file, that serves this repo's HTML at the default
+`https://transform24.github.io/THE-CIRCLE-OF-SILENCE/` URL — and real
+Pinterest pins scheduled through Metricool in July 2026 link straight to
+`.../THE-CIRCLE-OF-SILENCE/the-secret-place.html` at that address.
+
+So `the-secret-place.html` living in this repo is not a harmless leftover
+— it is a second, live, publicly-served copy of that page, same as the
+gate pages used to be duplicated before that caused a real drift bug
+(the paywall fix that missed the live site, described below). Anyone
+editing `the-secret-place.html` in THE-QUIET-AUTHORITY only, believing
+this repo's copy is inert, will let the same drift happen again.
+
+**Not yet resolved, and not something a repo edit alone can fix:**
+either disable this repo's GitHub Pages deployment (repo Settings → Pages
+→ set Source to "None"), or keep it deliberately and treat both copies as
+one thing that gets edited in both places every time. That's a decision
+for whoever manages GitHub settings, not something this file can do by
+itself.
 
 `gate-one.html` through `gate-six.html` used to be duplicated here and in
 THE-QUIET-AUTHORITY, which is what's actually deployed to
-`sanctuary-grace.com` (this repo has no `CNAME` and no Pages deployment of
-its own — it never served the duplicates it kept). The two copies drifted:
-a paywall fix landed here first and, because nothing else read from this
-repo's copies, missed the live site until it was ported to
-THE-QUIET-AUTHORITY separately (PR #51 there).
+`sanctuary-grace.com`. The two copies drifted: a paywall fix landed here
+first and, because nothing else read from this repo's copies, missed the
+live site until it was ported to THE-QUIET-AUTHORITY separately (PR #51
+there).
 
-To stop that from happening again, this repo's duplicates were deleted.
-THE-QUIET-AUTHORITY's copies are the only ones that exist now — edit gate
-content there, not here. This repo stays scoped to the Worker (`worker.js`,
-this README, `wrangler.toml`), which doesn't need the HTML files at all;
+To stop that from happening again, this repo's *gate* page duplicates
+were deleted — but `the-secret-place.html` was not, and per the
+correction above, it is still being served live. THE-QUIET-AUTHORITY's
+gate copies are the only ones that exist now for the six gates — edit
+gate content there, not here. This repo stays scoped to the Worker
+(`worker.js`, this README, `wrangler.toml`) for the six gates;
 `GATE_PAYMENT_LINKS` and `GATE_MAILERLITE_GROUPS` are already
-self-contained constants in `worker.js`.
+self-contained constants in `worker.js`. `the-secret-place.html` is the
+one exception to "this repo doesn't need HTML files" — it does, right
+now, live.
