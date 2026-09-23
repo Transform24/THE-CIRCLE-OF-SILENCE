@@ -72,24 +72,62 @@ directory brings it under version control.
     `/verify-purchase`, plus `not_paid` if the session didn't pay via the
     Secret Place payment link specifically.
 
-- `GET /restore-access?email=...` — lets a buyer on a new device/browser
-  recover which gates they've already paid for, by email, with no password
-  or account system. Scans each gate's MailerLite "Buyer" group
-  (`GATE_MAILERLITE_GROUPS`) for the given email and returns which gates it
-  was found in. The client mirrors the result into each gate's existing
-  `gate{N}_verified` localStorage key (see `gate-one.html` in
-  THE-QUIET-AUTHORITY) rather than this Worker setting anything itself.
+- `GET /restore-access?email=...` — **fixed 2026-09-23, security audit
+  Priority 2.** Previously this returned `unlockedGates` directly for any
+  email with no verification at all — anyone who knew or guessed a buyer's
+  email address could learn exactly what they'd purchased. Now it never
+  reveals anything itself. It signs a token (HMAC-SHA256 over
+  `email + expiry`, 15-minute TTL, via `RESTORE_ACCESS_SECRET`), writes the
+  resulting confirmation link into a new MailerLite custom field
+  (`restore_link`), and adds the email to a new "Restore Access Request"
+  group (`199372604097693203`) — joining that group fires the new
+  "Restore Access — Secure Link" automation (id `199372633312069031`),
+  which emails `{$restore_link}`. Only clicking that real link, sent to
+  that real inbox, reveals anything.
+
+  Responses:
+  - `200 { sent: true }` (always, once the email is validly formed — this
+    route intentionally never distinguishes a real buyer's email from a
+    stranger's, so it can't be used to check whether an address has ever
+    purchased anything)
+  - `4xx/5xx { error }` for a missing/invalid `email` (`invalid_email`), a
+    missing `MAILERLITE_API_KEY`/`RESTORE_ACCESS_SECRET`
+    (`not_configured`), or a MailerLite upstream failure (`upstream_error`)
+
+- `GET /restore-access/confirm?email=...&token=...` — the second step: the
+  buyer's actual click from the emailed link. Verifies the signature and
+  expiry from `/restore-access` first; only then scans each gate's
+  MailerLite "Buyer" group (`GATE_MAILERLITE_GROUPS`) for that email and
+  returns which gates it was found in. The client mirrors the result into
+  each gate's existing `gate{N}_verified` localStorage key (see
+  `restore-access.html` in THE-QUIET-AUTHORITY) rather than this Worker
+  setting anything itself.
 
   Responses:
   - `200 { unlockedGates: ["one", "three", ...] }` (empty array if none)
-  - `4xx/5xx { error }` for a missing/invalid `email` (`invalid_email`) or a
-    missing `MAILERLITE_API_KEY` (`not_configured`)
+  - `400 { error: "invalid_or_expired" }` for a bad, tampered, expired, or
+    reused-past-TTL token
+  - `4xx/5xx { error }` for the same `invalid_email`/`not_configured`
+    shapes as above
 
   Paginates each group's subscriber list (100 per page, up to 20 pages) to
   find a match. If any single gate's buyer group grows past a couple
   hundred subscribers, replace that scan with a server-side email filter —
   confirm the exact filter syntax against MailerLite's current API docs
   first, don't guess it.
+
+## One manual MailerLite step still needed
+
+The "Restore Access — Secure Link" automation (id `199372633312069031`,
+dashboard: `https://dashboard.mailerlite.com/automations/199372633312069031`)
+was created via the MailerLite MCP connector with its trigger (join group
+`199372604097693203`) and its one email (subject "Your Sanctuary Grace
+access link", body already written, using the `{$restore_link}` merge
+tag) fully configured. MailerLite's automation-creation API leaves every
+new automation **inactive** by design — there is no API call available
+here to flip that switch, only a manual toggle in the dashboard. Until
+Grace opens that link and clicks Activate, `/restore-access` will accept
+requests and write the field/group-join, but no email will actually send.
 
 ## Required secrets
 
@@ -102,6 +140,13 @@ Set these on the Worker (dashboard → Settings → Variables, or
   to an encrypted secret when setting the real key.
 - `STRIPE_SECRET_KEY` — **not yet set**. Required for `/verify-purchase` to
   work at all; until it's set, that route returns `503 not_configured`.
+- `RESTORE_ACCESS_SECRET` — **new 2026-09-23, not yet set.** A random
+  secret used only to sign/verify Restore Access confirmation tokens; it's
+  never sent anywhere else and never rotates alongside the Stripe/MailerLite
+  keys. Generate one with `openssl rand -hex 32` and set it with
+  `wrangler secret put RESTORE_ACCESS_SECRET`. Until it's set,
+  `/restore-access` and `/restore-access/confirm` both return
+  `503 not_configured`.
 
 Neither of these can be read back from the Stripe or MailerLite dashboards
 by an API call — Stripe never returns an existing secret key's value over

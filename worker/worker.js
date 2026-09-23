@@ -266,10 +266,63 @@ async function emailInMailerLiteGroup(env, email, groupId) {
   return false;
 }
 
-// Lets a buyer on a new device/browser recover which gates they've already
-// paid for, by email, with no password or account system: scans each gate's
-// MailerLite buyer group (joined by /verify-purchase on a confirmed Stripe
-// purchase) for the given email.
+// Restore Access group: joining this fires the "Restore Access — Secure
+// Link" MailerLite automation, which emails the {$restore_link} merge
+// field set below. Created 2026-09-23 alongside the restore_link field.
+const RESTORE_ACCESS_GROUP = '199372604097693203';
+const RESTORE_ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
+
+function toBase64Url(bytes) {
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function fromBase64Url(str) {
+  const bin = atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+async function hmacSign(secret, message) {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
+  return toBase64Url(new Uint8Array(sig));
+}
+
+// Signs {email, expiry} into a token so a Restore Access confirmation link
+// can prove the click actually came from that email's inbox, instead of
+// unlocking a stranger's purchases to anyone who knows/guesses their email.
+async function signRestoreToken(env, email, exp) {
+  const sig = await hmacSign(env.RESTORE_ACCESS_SECRET, email.trim().toLowerCase() + '.' + exp);
+  return exp + '.' + sig;
+}
+
+async function verifyRestoreToken(env, email, token) {
+  const parts = String(token || '').split('.');
+  if (parts.length !== 2) return false;
+  const [expStr, sig] = parts;
+  const exp = parseInt(expStr, 10);
+  if (!Number.isFinite(exp) || exp < Math.floor(Date.now() / 1000)) return false;
+  const expectedSig = await hmacSign(env.RESTORE_ACCESS_SECRET, email.trim().toLowerCase() + '.' + exp);
+  if (expectedSig.length !== sig.length) return false;
+  // Constant-time-ish compare - both sides are fixed-length base64url HMACs.
+  let diff = 0;
+  for (let i = 0; i < expectedSig.length; i++) diff |= expectedSig.charCodeAt(i) ^ sig.charCodeAt(i);
+  return diff === 0;
+}
+
+// Step 1: buyer submits their email. Instead of revealing purchases
+// directly (the old behavior let anyone who knew/guessed a stranger's email
+// see what they'd bought), this emails a signed, expiring confirmation link
+// to that address via MailerLite and reveals nothing here.
 async function handleRestoreAccess(request, env, origin) {
   if (request.method === 'OPTIONS') {
     return new Response(null, {
@@ -285,7 +338,59 @@ async function handleRestoreAccess(request, env, origin) {
 
   const email = new URL(request.url).searchParams.get('email');
   if (!email || !EMAIL_RE.test(email)) return json({ error: 'invalid_email' }, 400, origin);
-  if (!env.MAILERLITE_API_KEY) return json({ error: 'not_configured' }, 503, origin);
+  if (!env.MAILERLITE_API_KEY || !env.RESTORE_ACCESS_SECRET) return json({ error: 'not_configured' }, 503, origin);
+
+  const exp = Math.floor(Date.now() / 1000) + RESTORE_ACCESS_TOKEN_TTL_SECONDS;
+  const token = await signRestoreToken(env, email, exp);
+  const confirmLink =
+    'https://sanctuary-grace.com/restore-access.html?confirm=1&email=' +
+    encodeURIComponent(email.trim().toLowerCase()) +
+    '&token=' +
+    encodeURIComponent(token);
+
+  try {
+    await fetch('https://connect.mailerlite.com/api/subscribers', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: 'Bearer ' + env.MAILERLITE_API_KEY,
+      },
+      body: JSON.stringify({
+        email: email.trim(),
+        fields: { restore_link: confirmLink },
+        groups: [RESTORE_ACCESS_GROUP],
+      }),
+    });
+  } catch (err) {
+    return json({ error: 'upstream_error' }, 502, origin);
+  }
+
+  return json({ sent: true }, 200, origin);
+}
+
+// Step 2: buyer clicks the link from their inbox. Only once the signature
+// and expiry check out does this scan the gate buyer groups and reveal
+// which gates that email has actually purchased.
+async function handleRestoreAccessConfirm(request, env, origin) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        ...corsHeaders(origin),
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
+  }
+  if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405, origin);
+
+  const params = new URL(request.url).searchParams;
+  const email = params.get('email');
+  const token = params.get('token');
+  if (!email || !EMAIL_RE.test(email)) return json({ error: 'invalid_email' }, 400, origin);
+  if (!env.MAILERLITE_API_KEY || !env.RESTORE_ACCESS_SECRET) return json({ error: 'not_configured' }, 503, origin);
+  if (!(await verifyRestoreToken(env, email, token))) return json({ error: 'invalid_or_expired' }, 400, origin);
 
   const unlockedGates = [];
   for (const gate of Object.keys(GATE_MAILERLITE_GROUPS)) {
@@ -384,6 +489,10 @@ export default {
 
     if (url.pathname === '/restore-access') {
       return handleRestoreAccess(request, env, origin);
+    }
+
+    if (url.pathname === '/restore-access/confirm') {
+      return handleRestoreAccessConfirm(request, env, origin);
     }
 
     return new Response('Not found', { status: 404 });
