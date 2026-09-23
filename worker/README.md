@@ -24,8 +24,10 @@ directory brings it under version control.
   Session (created via one of the gate payment links), returns which gate
   it paid for, and — if the session's buyer email is present — adds that
   buyer to the matching gate's MailerLite "Buyer" group, which is what
-  triggers that gate's 11-step welcome sequence automation (built in
-  MailerLite already, currently disabled/waiting).
+  triggers that gate's 6-email welcome sequence automation (built in
+  MailerLite already, currently disabled/waiting — confirmed via MailerLite
+  dry_run_automation: emails_designed: 6, see THE-QUIET-AUTHORITY's
+  PROJECT_STATUS.md).
 
   Gate → MailerLite group mapping (`GATE_MAILERLITE_GROUPS` in `worker.js`):
   Gate 1 → `193979375492793939`, Gate 2 → `194025316835919214`,

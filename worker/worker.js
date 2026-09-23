@@ -35,7 +35,9 @@ const ALLOWED_ORIGINS = new Set([
 
 // Each gate's own MailerLite "Buyer" group (from the MailerLite dashboard).
 // Joining one of these groups is what triggers that gate's already-built
-// 11-step welcome sequence automation (currently disabled, waiting).
+// 6-email welcome sequence automation (currently disabled, waiting — see
+// THE-QUIET-AUTHORITY's PROJECT_STATUS.md and circle-of-silence/gate-1-hakria.md,
+// confirmed via MailerLite dry_run_automation: emails_designed: 6).
 const GATE_MAILERLITE_GROUPS = {
   one: '193979375492793939',
   two: '194025316835919214',
