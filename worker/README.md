@@ -54,6 +54,36 @@ directory brings it under version control.
     `/verify-purchase`, plus `not_paid` if the session didn't pay via the
     Secret Place payment link specifically.
 
+- `GET /names-of-god/download?session_id=cs_...` — verifies a Stripe
+  Checkout Session against the Names and Attributes of God ebook payment
+  link (`NAMES_OF_GOD_EBOOK_PAYMENT_LINK`) and, if paid, streams back
+  `The-Names-and-Attributes-of-God.pdf` (embedded in `worker.js` as
+  `NAMES_OF_GOD_EBOOK_PDF_BASE64`), and adds the buyer's email to
+  `NAMES_OF_GOD_EBOOK_MAILERLITE_GROUP` if one is set.
+
+  **Not yet live.** `NAMES_OF_GOD_EBOOK_PAYMENT_LINK` is `''` — no Stripe
+  product/price/Payment Link exists for this ebook yet (blocked on
+  live-mode Stripe access), and two entries in the source PDF (Seh
+  Ha-Elohim, Kochav HaBoker) are pending a content-verification caveat per
+  this project's standing rule before it goes on sale. With the constant
+  empty, this route always returns `503 not_configured` and the embedded
+  PDF can never be served. To activate: create the real Product/Price/
+  Payment Link (managed_payments: false, automatic_tax: false,
+  payment_method_collection: always, after_completion redirect to
+  `names-and-attributes-of-god.html?session_id={CHECKOUT_SESSION_ID}` in
+  THE-QUIET-AUTHORITY, matching the existing standalone-product
+  convention), set `NAMES_OF_GOD_EBOOK_PAYMENT_LINK` here to match
+  `STRIPE_PAYMENT_LINK` in that page's `<script>`, optionally set
+  `NAMES_OF_GOD_EBOOK_MAILERLITE_GROUP` to a dedicated buyer group once
+  Grace creates one, then `wrangler deploy`.
+
+  Responses (once activated):
+  - `200` — PDF bytes, `Content-Type: application/pdf`,
+    `Content-Disposition: attachment`
+  - `4xx/5xx { verified: false, error }` for the same error shapes as
+    `/secret-place/download`, plus `not_configured` (503) while the payment
+    link above is unset.
+
 - `GET /restore-access?email=...` — lets a buyer on a new device/browser
   recover which gates they've already paid for, by email, with no password
   or account system. Scans each gate's MailerLite "Buyer" group
