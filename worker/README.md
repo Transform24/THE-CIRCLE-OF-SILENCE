@@ -7,10 +7,19 @@ directory brings it under version control.
 ## Routes
 
 - `POST /mailerlite-subscribe` — adds an email to a MailerLite group.
-  Body: `{ "email": "...", "name": "...", "groupKey": "A" | "B" | "C" | "D" | "NB" | "gate0" | "secretplace" | "namesofgod" }`.
+  Body: `{ "email": "...", "name": "...", "groupKey": "A" | "B" | "C" | "D" | "NB" | "gate0" | "secretplace" | "namesofgod" | "tqa_foyer" | "secretplace_foyer" }`.
   `namesofgod` gates the free Hebrew Names of God reference guide on
   `names-of-god.html` in THE-QUIET-AUTHORITY, group id `198005637470225771`
   ("Names of God — Reference Guide" in MailerLite).
+
+  `tqa_foyer` (used by `the-quiet-authority-foyer.html`) and
+  `secretplace_foyer` (used by `the-secret-place-foyer.html`), both in
+  THE-QUIET-AUTHORITY, are recognized `groupKey` values but are currently
+  mapped to `null` in `MAILERLITE_GROUPS` — no real MailerLite group ID for
+  either has been found in either repo's docs. Signups from those two pages
+  get a clean `400 Group not configured` response (not a crash, and not a
+  silent success) until Grace supplies the real group ID from her
+  MailerLite dashboard and it's added to `MAILERLITE_GROUPS` in `worker.js`.
 - `GET /verify-purchase?session_id=cs_...` — verifies a Stripe Checkout
   Session (created via one of the gate payment links), returns which gate
   it paid for, and — if the session's buyer email is present — adds that

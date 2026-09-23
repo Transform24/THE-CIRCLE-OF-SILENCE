@@ -311,6 +311,10 @@ async function handleMailerliteSubscribe(request, env, origin) {
     gate0: '194025314623424492',
     secretplace: '192667224052336080',
     namesofgod: '198005637470225771',
+    // TODO: real MailerLite group ID needed from Grace's dashboard — signups with this key currently 400
+    tqa_foyer: null,
+    // TODO: real MailerLite group ID needed from Grace's dashboard — signups with this key currently 400
+    secretplace_foyer: null,
   };
 
   let body;
@@ -320,9 +324,15 @@ async function handleMailerliteSubscribe(request, env, origin) {
     return new Response('Bad request', { status: 400, headers: corsHeaders(origin) });
   }
   const { email, name, groupKey } = body || {};
-  const groupId = MAILERLITE_GROUPS[groupKey];
-  if (typeof email !== 'string' || !EMAIL_RE.test(email) || !groupId) {
+  if (!Object.prototype.hasOwnProperty.call(MAILERLITE_GROUPS, groupKey)) {
     return new Response('Bad request', { status: 400, headers: corsHeaders(origin) });
+  }
+  const groupId = MAILERLITE_GROUPS[groupKey];
+  if (typeof email !== 'string' || !EMAIL_RE.test(email)) {
+    return new Response('Bad request', { status: 400, headers: corsHeaders(origin) });
+  }
+  if (!groupId) {
+    return new Response('Group not configured', { status: 400, headers: corsHeaders(origin) });
   }
   if (!env.MAILERLITE_API_KEY) {
     return new Response('Not configured', { status: 503, headers: corsHeaders(origin) });
