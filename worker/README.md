@@ -14,20 +14,27 @@ directory brings it under version control.
 
   `tqa_foyer` (used by `the-quiet-authority-foyer.html`) and
   `secretplace_foyer` (used by `the-secret-place-foyer.html`), both in
-  THE-QUIET-AUTHORITY, are recognized `groupKey` values but are currently
-  mapped to `null` in `MAILERLITE_GROUPS` — no real MailerLite group ID for
-  either has been found in either repo's docs. Signups from those two pages
-  get a clean `400 Group not configured` response (not a crash, and not a
-  silent success) until Grace supplies the real group ID from her
-  MailerLite dashboard and it's added to `MAILERLITE_GROUPS` in `worker.js`.
+  THE-QUIET-AUTHORITY, now map to two real MailerLite groups created
+  2026-09-23 via the MailerLite MCP connector: "Quiet Authority — Foyer"
+  (`199368509513270804`) and "Secret Place — Foyer" (`199368510173873927`).
+  Both were empty, unpromoted new groups at creation — no welcome sequence
+  is wired to either yet, unlike every other group below.
 - `GET /verify-purchase?session_id=cs_...` — verifies a Stripe Checkout
   Session (created via one of the gate payment links), returns which gate
   it paid for, and — if the session's buyer email is present — adds that
   buyer to the matching gate's MailerLite "Buyer" group, which is what
-  triggers that gate's 6-email welcome sequence automation (built in
-  MailerLite already, currently disabled/waiting — confirmed via MailerLite
-  dry_run_automation: emails_designed: 6, see THE-QUIET-AUTHORITY's
-  PROJECT_STATUS.md).
+  triggers that gate's welcome sequence automation. Confirmed 2026-09-23
+  directly via the MailerLite MCP connector for all six gates plus Gate 0:
+  every one is real, complete, unbroken, and ACTIVE right now — not
+  disabled. Each is 3-11 total steps (a mix of real written KJV-based
+  emails and day-delays between them); Gate 1's is 6 emails across 11
+  steps, matching both the "6-email" and "11-step" descriptions once
+  found separately in this repo's history, which were not actually in
+  conflict. One real, separate open question: every automation checked
+  shows 0 subscribers ever entered — no gate has ever recorded a single
+  buyer-group join, which is worth Grace confirming against actual Stripe
+  sales (out of scope here; this session's Stripe access is test-mode
+  only).
 
   Gate → MailerLite group mapping (`GATE_MAILERLITE_GROUPS` in `worker.js`):
   Gate 1 → `193979375492793939`, Gate 2 → `194025316835919214`,

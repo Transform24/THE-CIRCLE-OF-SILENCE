@@ -34,10 +34,14 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 
 // Each gate's own MailerLite "Buyer" group (from the MailerLite dashboard).
-// Joining one of these groups is what triggers that gate's already-built
-// 6-email welcome sequence automation (currently disabled, waiting — see
-// THE-QUIET-AUTHORITY's PROJECT_STATUS.md and circle-of-silence/gate-1-hakria.md,
-// confirmed via MailerLite dry_run_automation: emails_designed: 6).
+// Joining one of these groups is what triggers that gate's welcome sequence
+// automation — real, complete, and ACTIVE right now (confirmed 2026-09-23
+// directly via the MailerLite MCP connector for every gate: enabled:true,
+// complete:true, broken:false, real written KJV copy in Grace's voice, no
+// placeholders). Not "disabled, waiting" — that was stale and is wrong.
+// Every checked automation shows 0 subscribers ever entered, which is a
+// real, separate open question (no gate has ever recorded a buyer-group
+// join) — not the same thing as the sequence being off.
 const GATE_MAILERLITE_GROUPS = {
   one: '193979375492793939',
   two: '194025316835919214',
@@ -313,10 +317,8 @@ async function handleMailerliteSubscribe(request, env, origin) {
     gate0: '194025314623424492',
     secretplace: '192667224052336080',
     namesofgod: '198005637470225771',
-    // TODO: real MailerLite group ID needed from Grace's dashboard — signups with this key currently 400
-    tqa_foyer: null,
-    // TODO: real MailerLite group ID needed from Grace's dashboard — signups with this key currently 400
-    secretplace_foyer: null,
+    tqa_foyer: '199368509513270804',
+    secretplace_foyer: '199368510173873927',
   };
 
   let body;
