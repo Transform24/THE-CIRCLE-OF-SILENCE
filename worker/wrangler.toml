@@ -7,3 +7,7 @@ compatibility_date = "2026-08-18"
 #   MAILERLITE_API_KEY  - MailerLite API key, used by /mailerlite-subscribe
 #   STRIPE_SECRET_KEY   - Stripe secret key, used by /verify-purchase to
 #                         retrieve and validate Checkout Sessions
+
+[[kv_namespaces]]
+binding = "NAMES_ASSETS"
+id = "6b76fa6d6c2a451ea2575bd97b4fbaa5"
