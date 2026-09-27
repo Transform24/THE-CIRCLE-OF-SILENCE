@@ -73,20 +73,20 @@ directory brings it under version control.
   confirm the exact filter syntax against MailerLite's current API docs
   first, don't guess it.
 
-- `GET /names-ebook/download?session_id=cs_...` — verifies a Stripe
+- `GET /names-ebook/download?session_id=cs_...`: verifies a Stripe
   Checkout Session against the Names & Attributes of God ebook's payment
   link (`NAMES_EBOOK_PAYMENT_LINK`) and, if paid, streams back
   `The-Names-and-Attributes-of-God.pdf` from the `NAMES_ASSETS` KV
   namespace (key `ebook-pdf`, set by `NAMES_EBOOK_KV_KEY`) as the response
   body. Unlike `/secret-place/download`, the PDF bytes are not embedded in
-  `worker.js` — they live in Workers KV so the script stays a manageable
+  `worker.js`, they live in Workers KV so the script stays a manageable
   size. No MailerLite group-join is wired up for this route yet (there is
   no dedicated buyer group for it); add one the same way
   `SECRET_PLACE_MAILERLITE_GROUP` works if Grace wants a welcome sequence
   for ebook buyers.
 
   Responses:
-  - `200` — PDF bytes, `Content-Type: application/pdf`,
+  - `200`: PDF bytes, `Content-Type: application/pdf`,
     `Content-Disposition: attachment`
   - `4xx/5xx { verified: false, error }` for the same error shapes as
     `/verify-purchase` (`invalid_session_id`, `session_not_found`,
@@ -119,7 +119,7 @@ from this directory, or via the Cloudflare dashboard → Workers → lively-dew-
 
 ## Required bindings
 
-- `NAMES_ASSETS` — a `kv_namespace` binding to the Cloudflare KV namespace
+- `NAMES_ASSETS`: a `kv_namespace` binding to the Cloudflare KV namespace
   `names-ebook-assets` (id `6b76fa6d6c2a451ea2575bd97b4fbaa5`), used by
   `/names-ebook/download`. The ebook PDF is stored there under the key
   `ebook-pdf`, not embedded in this file. Add it in `wrangler.toml` (or the
@@ -130,7 +130,7 @@ from this directory, or via the Cloudflare dashboard → Workers → lively-dew-
   binding = "NAMES_ASSETS"
   id = "6b76fa6d6c2a451ea2575bd97b4fbaa5"
   ```
-  KV bindings can't use the `inherit` mechanism secrets use — a deploy that
+  KV bindings can't use the `inherit` mechanism secrets use, so a deploy that
   drops this binding will make `/names-ebook/download` return
   `503 not_configured` until it's added back.
 
