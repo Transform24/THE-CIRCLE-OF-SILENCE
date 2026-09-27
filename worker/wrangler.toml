@@ -4,6 +4,14 @@ compatibility_date = "2026-08-18"
 
 # Bindings (values are not stored here — set with `wrangler secret put <NAME>`
 # or via the Cloudflare dashboard):
-#   MAILERLITE_API_KEY  - MailerLite API key, used by /mailerlite-subscribe
-#   STRIPE_SECRET_KEY   - Stripe secret key, used by /verify-purchase to
-#                         retrieve and validate Checkout Sessions
+#   MAILERLITE_API_KEY   - MailerLite API key, used by /mailerlite-subscribe
+#   STRIPE_SECRET_KEY    - live-mode Stripe secret key, used to verify
+#                          Checkout Sessions on the live routes
+#   STRIPE_TEST_SECRET_KEY - test-mode Stripe secret key (sk_test_...), used
+#                          only when a session_id starts with cs_test_, so a
+#                          test-mode purchase can be verified end to end
+#                          without touching the live key
+
+[[kv_namespaces]]
+binding = "NAMES_ASSETS"
+id = "6b76fa6d6c2a451ea2575bd97b4fbaa5"

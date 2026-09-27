@@ -73,6 +73,30 @@ directory brings it under version control.
   confirm the exact filter syntax against MailerLite's current API docs
   first, don't guess it.
 
+- `GET /names-ebook/download?session_id=cs_...`: verifies a Stripe
+  Checkout Session against the Names & Attributes of God ebook's payment
+  link (`NAMES_EBOOK_PAYMENT_LINK`) and, if paid, streams back
+  `The-Names-and-Attributes-of-God.pdf` from the `NAMES_ASSETS` KV
+  namespace (key `ebook-pdf`, set by `NAMES_EBOOK_KV_KEY`) as the response
+  body. Unlike `/secret-place/download`, the PDF bytes are not embedded in
+  `worker.js`, they live in Workers KV so the script stays a manageable
+  size. No MailerLite group-join is wired up for this route yet (there is
+  no dedicated buyer group for it); add one the same way
+  `SECRET_PLACE_MAILERLITE_GROUP` works if Grace wants a welcome sequence
+  for ebook buyers.
+
+  Responses:
+  - `200`: PDF bytes, `Content-Type: application/pdf`,
+    `Content-Disposition: attachment`
+  - `4xx/5xx { verified: false, error }` for the same error shapes as
+    `/verify-purchase` (`invalid_session_id`, `session_not_found`,
+    `not_paid` if the session didn't pay via this payment link
+    specifically, `not_configured` if `STRIPE_SECRET_KEY` is unset), plus
+    `502 { verified: true, error: "asset_missing" }` if the session paid
+    but the `ebook-pdf` key isn't present in `NAMES_ASSETS`, and
+    `503 { verified: true, error: "not_configured" }` if the
+    `NAMES_ASSETS` binding itself is missing.
+
 ## Required secrets
 
 Set these on the Worker (dashboard → Settings → Variables, or
@@ -84,6 +108,13 @@ Set these on the Worker (dashboard → Settings → Variables, or
   to an encrypted secret when setting the real key.
 - `STRIPE_SECRET_KEY` — **not yet set**. Required for `/verify-purchase` to
   work at all; until it's set, that route returns `503 not_configured`.
+- `STRIPE_TEST_SECRET_KEY`: a test-mode Stripe secret key (`sk_test_...`).
+  Only `/names-ebook/download` uses it, and only when the `session_id` it's
+  given starts with `cs_test_` (a live `cs_live_` session always uses
+  `STRIPE_SECRET_KEY`, unaffected by this). This lets the ebook's test-mode
+  Payment Link be exercised end to end, including a real download, without
+  needing a live purchase. Currently set to a placeholder value; replace it
+  with a real `sk_test_...` key the same way as the other secrets below.
 
 Neither of these can be read back from the Stripe or MailerLite dashboards
 by an API call — Stripe never returns an existing secret key's value over
@@ -92,6 +123,23 @@ key exposed. Grace needs to set both directly:
 `wrangler secret put STRIPE_SECRET_KEY` / `wrangler secret put MAILERLITE_API_KEY`
 from this directory, or via the Cloudflare dashboard → Workers → lively-dew-924c
 → Settings → Variables.
+
+## Required bindings
+
+- `NAMES_ASSETS`: a `kv_namespace` binding to the Cloudflare KV namespace
+  `names-ebook-assets` (id `6b76fa6d6c2a451ea2575bd97b4fbaa5`), used by
+  `/names-ebook/download`. The ebook PDF is stored there under the key
+  `ebook-pdf`, not embedded in this file. Add it in `wrangler.toml` (or the
+  dashboard → Workers → lively-dew-924c → Settings → Bindings) if it's ever
+  missing from a deploy:
+  ```
+  [[kv_namespaces]]
+  binding = "NAMES_ASSETS"
+  id = "6b76fa6d6c2a451ea2575bd97b4fbaa5"
+  ```
+  KV bindings can't use the `inherit` mechanism secrets use, so a deploy that
+  drops this binding will make `/names-ebook/download` return
+  `503 not_configured` until it's added back.
 
 ## Deploying
 
