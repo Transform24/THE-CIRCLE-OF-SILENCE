@@ -15,6 +15,10 @@
 
 const STRIPE_API = 'https://api.stripe.com/v1';
 
+function stripeSecretFor(sessionId, env) {
+  return sessionId && sessionId.indexOf('cs_test_') === 0 ? env.STRIPE_TEST_SECRET_KEY : env.STRIPE_SECRET_KEY;
+}
+
 // Each gate sells through its own Stripe Payment Link (see THE-QUIET-AUTHORITY's
 // gate-*.html — this repo no longer keeps its own copies, see worker/README.md).
 // A verified Checkout Session's payment_link.url is matched against this
@@ -198,7 +202,8 @@ async function handleNamesEbookDownload(request, env, origin) {
     return json({ verified: false, error: 'invalid_session_id' }, 400, origin);
   }
 
-  if (!env.STRIPE_SECRET_KEY) {
+  const stripeKey = stripeSecretFor(sessionId, env);
+  if (!stripeKey) {
     return json({ verified: false, error: 'not_configured' }, 503, origin);
   }
 
@@ -206,7 +211,7 @@ async function handleNamesEbookDownload(request, env, origin) {
   try {
     const stripeRes = await fetch(
       `${STRIPE_API}/checkout/sessions/${encodeURIComponent(sessionId)}?expand[]=payment_link`,
-      { headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}` } }
+      { headers: { Authorization: `Bearer ${stripeKey}` } }
     );
     if (!stripeRes.ok) {
       return json({ verified: false, error: 'session_not_found' }, 404, origin);

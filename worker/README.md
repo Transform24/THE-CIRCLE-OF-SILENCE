@@ -108,6 +108,13 @@ Set these on the Worker (dashboard → Settings → Variables, or
   to an encrypted secret when setting the real key.
 - `STRIPE_SECRET_KEY` — **not yet set**. Required for `/verify-purchase` to
   work at all; until it's set, that route returns `503 not_configured`.
+- `STRIPE_TEST_SECRET_KEY`: a test-mode Stripe secret key (`sk_test_...`).
+  Only `/names-ebook/download` uses it, and only when the `session_id` it's
+  given starts with `cs_test_` (a live `cs_live_` session always uses
+  `STRIPE_SECRET_KEY`, unaffected by this). This lets the ebook's test-mode
+  Payment Link be exercised end to end, including a real download, without
+  needing a live purchase. Currently set to a placeholder value; replace it
+  with a real `sk_test_...` key the same way as the other secrets below.
 
 Neither of these can be read back from the Stripe or MailerLite dashboards
 by an API call — Stripe never returns an existing secret key's value over
