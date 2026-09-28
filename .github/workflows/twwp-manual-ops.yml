@@ -16,6 +16,9 @@ on:
         required: true
         type: string
 
+permissions:
+  issues: write
+
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -26,22 +29,21 @@ jobs:
       - name: Seed TWWP zip into KV (pull from GitHub into Cloudflare)
         if: ${{ inputs.action == 'seed-and-check' }}
         run: |
-          echo "POST /twwp/seed"
+          echo "POST /twwp/seed" | tee -a /tmp/report.txt
           curl -sS -i -X POST "https://lively-dew-924c.tdwdemp.workers.dev/twwp/seed" \
             -H "Authorization: Bearer ${{ inputs.bearer_secret }}" \
-            -o /tmp/seed_resp.txt -w "\nHTTP_STATUS:%{http_code}\n"
-          echo "----- response -----"
-          cat /tmp/seed_resp.txt
+            2>&1 | tee -a /tmp/report.txt
 
       - name: Check TWWP asset presence
         run: |
-          echo "GET /twwp/asset-check"
-          curl -sS -i "https://lively-dew-924c.tdwdemp.workers.dev/twwp/asset-check" \
-            -o /tmp/check_resp.txt -w "\nHTTP_STATUS:%{http_code}\n" || true
-          echo "----- response -----"
-          cat /tmp/check_resp.txt || true
-          echo ""
-          echo "Falling back to a HEAD on the download route with a dummy session if asset-check route does not exist:"
-          curl -sS -i "https://lively-dew-924c.tdwdemp.workers.dev/twwp/download?session_id=diagnostic" \
-            -o /tmp/dl_resp.txt -w "\nHTTP_STATUS:%{http_code}\n" || true
-          head -c 500 /tmp/dl_resp.txt || true
+          echo "" | tee -a /tmp/report.txt
+          echo "GET /twwp/asset-check" | tee -a /tmp/report.txt
+          curl -sS -i "https://lively-dew-924c.tdwdemp.workers.dev/twwp/asset-check" 2>&1 | tee -a /tmp/report.txt
+
+      - name: Post results as an issue comment (so logs are readable via the API)
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: python3 .github/workflows/scripts/post_twwp_report.py
