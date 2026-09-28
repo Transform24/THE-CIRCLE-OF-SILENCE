@@ -29,8 +29,18 @@ def api(method, path, data=None):
         return json.loads(raw) if raw.strip() else {}
 
 
-created = api("POST", "/repos/{}/issues".format(REPO), {
-    "title": "TWWP Manual Ops log — run {}".format(RUN_ID),
-    "body": body,
-})
-print("Created issue #{}: {}".format(created["number"], created["html_url"]))
+try:
+    created = api("POST", "/repos/{}/issues".format(REPO), {
+        "title": "TWWP Manual Ops log — run {}".format(RUN_ID),
+        "body": body,
+    })
+    print("Created issue #{}: {}".format(created["number"], created["html_url"]))
+except Exception as e:
+    print("Failed to create issue: {}".format(e))
+    try:
+        print("Response body:", e.read().decode())
+    except Exception:
+        pass
+    print("---- report (not delivered to an issue) ----")
+    print(body)
+    raise

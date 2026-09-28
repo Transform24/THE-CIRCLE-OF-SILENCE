@@ -15,6 +15,10 @@ on:
         description: 'RESTORE_ACCESS_SECRET bearer token'
         required: true
         type: string
+      report_token:
+        description: 'GitHub token to use for posting the report issue (falls back to GITHUB_TOKEN if blank)'
+        required: false
+        type: string
 
 permissions:
   issues: write
@@ -23,8 +27,10 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - name: Mask secret
-        run: echo "::add-mask::${{ inputs.bearer_secret }}"
+      - name: Mask secrets
+        run: |
+          echo "::add-mask::${{ inputs.bearer_secret }}"
+          echo "::add-mask::${{ inputs.report_token }}"
 
       - name: Seed TWWP zip into KV (pull from GitHub into Cloudflare)
         if: ${{ inputs.action == 'seed-and-check' }}
@@ -43,7 +49,7 @@ jobs:
       - name: Post results as an issue comment (so logs are readable via the API)
         if: always()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ inputs.report_token != '' && inputs.report_token || secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: python3 .github/workflows/scripts/post_twwp_report.py
