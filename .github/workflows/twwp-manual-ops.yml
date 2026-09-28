@@ -11,6 +11,8 @@ on:
         options:
           - seed-and-check
           - asset-check-only
+          - seed-and-check-ebook
+          - asset-check-ebook-only
       bearer_secret:
         description: 'RESTORE_ACCESS_SECRET bearer token'
         required: true
@@ -44,10 +46,26 @@ jobs:
             2>&1 | tee -a /tmp/report.txt
 
       - name: Check TWWP asset presence
+        if: ${{ inputs.action == 'seed-and-check' || inputs.action == 'asset-check-only' }}
         run: |
           echo "" | tee -a /tmp/report.txt
           echo "GET /twwp/asset-check" | tee -a /tmp/report.txt
           curl -sS -i "https://lively-dew-924c.tdwdemp.workers.dev/twwp/asset-check" 2>&1 | tee -a /tmp/report.txt
+
+      - name: Seed Names & Attributes ebook PDF into KV (pull from GitHub into Cloudflare)
+        if: ${{ inputs.action == 'seed-and-check-ebook' }}
+        run: |
+          echo "POST /names-ebook/seed" | tee -a /tmp/report.txt
+          curl -sS -i -X POST "https://lively-dew-924c.tdwdemp.workers.dev/names-ebook/seed" \
+            -H "Authorization: Bearer ${{ inputs.bearer_secret }}" \
+            2>&1 | tee -a /tmp/report.txt
+
+      - name: Check Names & Attributes ebook asset presence
+        if: ${{ inputs.action == 'seed-and-check-ebook' || inputs.action == 'asset-check-ebook-only' }}
+        run: |
+          echo "" | tee -a /tmp/report.txt
+          echo "GET /names-ebook/asset-check" | tee -a /tmp/report.txt
+          curl -sS -i "https://lively-dew-924c.tdwdemp.workers.dev/names-ebook/asset-check" 2>&1 | tee -a /tmp/report.txt
 
       - name: Post results as an issue comment (so logs are readable via the API)
         if: always()

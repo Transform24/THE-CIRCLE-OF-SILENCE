@@ -73,6 +73,10 @@ const TWWP_ZIP_GITHUB_URL =
 const NAMES_EBOOK_PAYMENT_LINK = 'https://buy.stripe.com/bJecN5dVu6G50Es2AicQU0H';
 const NAMES_EBOOK_KV_KEY = 'ebook-pdf';
 const NAMES_EBOOK_PDF_FILENAME = 'The-Names-and-Attributes-of-God.pdf';
+// Source of truth for the /names-ebook/seed route: the PDF committed to
+// this repo, mirroring the TWWP_ZIP_GITHUB_URL seeding pattern above.
+const NAMES_EBOOK_PDF_GITHUB_URL =
+  'https://raw.githubusercontent.com/Transform24/THE-CIRCLE-OF-SILENCE/main/worker/assets/The-Names-and-Attributes-of-God.pdf';
 
 const SESSION_ID_RE = /^cs_(test|live)_[A-Za-z0-9]+$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -253,6 +257,50 @@ async function handleNamesEbookDownload(request, env, origin) {
       ...corsHeaders(origin),
     },
   });
+}
+
+// Diagnostic: confirms the ebook PDF is present in the names-assets KV
+// namespace (no purchase check). Mirrors /twwp/asset-check.
+async function handleNamesEbookAssetCheck(request, env, origin) {
+  if (!env.NAMES_ASSETS) {
+    return json({ configured: false, error: 'no_kv_binding' }, 200, origin);
+  }
+  try {
+    const buf = await env.NAMES_ASSETS.get(NAMES_EBOOK_KV_KEY, 'arrayBuffer');
+    return json({ configured: true, present: !!buf, byteLength: buf ? buf.byteLength : 0 }, 200, origin);
+  } catch (err) {
+    return json({ configured: true, error: String(err) }, 200, origin);
+  }
+}
+
+// One-time admin route to seed the names-assets KV namespace from the PDF
+// committed to this repo. Protected by RESTORE_ACCESS_SECRET, same as
+// /twwp/seed. Safe to leave in place; re-running just re-pulls the file.
+async function handleNamesEbookSeed(request, env, origin) {
+  const authHeader = request.headers.get('Authorization');
+  if (!env.RESTORE_ACCESS_SECRET || authHeader !== 'Bearer ' + env.RESTORE_ACCESS_SECRET) {
+    return json({ error: 'unauthorized' }, 401, origin);
+  }
+  if (request.method !== 'POST') {
+    return json({ error: 'method_not_allowed' }, 405, origin);
+  }
+  if (!env.NAMES_ASSETS) {
+    return json({ ok: false, error: 'no_kv_binding' }, 503, origin);
+  }
+
+  let buf;
+  try {
+    const res = await fetch(NAMES_EBOOK_PDF_GITHUB_URL);
+    if (!res.ok) {
+      return json({ ok: false, error: 'fetch_failed', status: res.status }, 502, origin);
+    }
+    buf = await res.arrayBuffer();
+  } catch (err) {
+    return json({ ok: false, error: 'fetch_threw', detail: String(err) }, 502, origin);
+  }
+
+  await env.NAMES_ASSETS.put(NAMES_EBOOK_KV_KEY, buf);
+  return json({ ok: true, byteLength: buf.byteLength }, 200, origin);
 }
 
 async function handleTwwpAssetCheck(request, env, origin) {
@@ -572,6 +620,14 @@ export default {
 
     if (url.pathname === '/names-ebook/download') {
       return handleNamesEbookDownload(request, env, origin);
+    }
+
+    if (url.pathname === '/names-ebook/asset-check') {
+      return handleNamesEbookAssetCheck(request, env, origin);
+    }
+
+    if (url.pathname === '/names-ebook/seed' && (request.method === 'POST' || request.method === 'OPTIONS')) {
+      return handleNamesEbookSeed(request, env, origin);
     }
 
     return new Response('Not found', { status: 404 });
