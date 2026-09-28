@@ -1,0 +1,47 @@
+name: TWWP Manual Ops
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to run'
+        required: true
+        default: 'seed-and-check'
+        type: choice
+        options:
+          - seed-and-check
+          - asset-check-only
+      bearer_secret:
+        description: 'RESTORE_ACCESS_SECRET bearer token'
+        required: true
+        type: string
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mask secret
+        run: echo "::add-mask::${{ inputs.bearer_secret }}"
+
+      - name: Seed TWWP zip into KV (pull from GitHub into Cloudflare)
+        if: ${{ inputs.action == 'seed-and-check' }}
+        run: |
+          echo "POST /twwp/seed"
+          curl -sS -i -X POST "https://lively-dew-924c.tdwdemp.workers.dev/twwp/seed" \
+            -H "Authorization: Bearer ${{ inputs.bearer_secret }}" \
+            -o /tmp/seed_resp.txt -w "\nHTTP_STATUS:%{http_code}\n"
+          echo "----- response -----"
+          cat /tmp/seed_resp.txt
+
+      - name: Check TWWP asset presence
+        run: |
+          echo "GET /twwp/asset-check"
+          curl -sS -i "https://lively-dew-924c.tdwdemp.workers.dev/twwp/asset-check" \
+            -o /tmp/check_resp.txt -w "\nHTTP_STATUS:%{http_code}\n" || true
+          echo "----- response -----"
+          cat /tmp/check_resp.txt || true
+          echo ""
+          echo "Falling back to a HEAD on the download route with a dummy session if asset-check route does not exist:"
+          curl -sS -i "https://lively-dew-924c.tdwdemp.workers.dev/twwp/download?session_id=diagnostic" \
+            -o /tmp/dl_resp.txt -w "\nHTTP_STATUS:%{http_code}\n" || true
+          head -c 500 /tmp/dl_resp.txt || true
