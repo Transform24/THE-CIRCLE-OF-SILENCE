@@ -2,7 +2,7 @@ import json
 import os
 import urllib.request
 
-GH_TOKEN = os.environ["GH_TOKEN"]
+GH_TOKEN = os.environ.get("REPORT_TOKEN_INPUT") or os.environ["DEFAULT_GH_TOKEN"]
 REPO = os.environ["REPO"]
 RUN_ID = os.environ["RUN_ID"]
 
