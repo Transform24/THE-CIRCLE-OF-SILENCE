@@ -1,0 +1,22 @@
+name: E2E Probe
+on:
+  push:
+    branches: [claude/fervent-mayer-cbmdza]
+    paths: [.github/workflows/e2e-probe.yml]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe live worker
+        run: |
+          W=https://lively-dew-924c.tdwdemp.workers.dev
+          O="Origin: https://sanctuary-grace.com"
+          echo "== subscribe (TQA group A) =="
+          curl -sS -i -X POST "$W/mailerlite-subscribe" -H "$O" -H 'Content-Type: application/json' \
+            -d '{"email":"tdwdemp+tqa-e2e-probe@gmail.com","name":"E2E Probe","groupKey":"A"}' | head -20
+          echo; echo "== verify-purchase no session =="
+          curl -sS -i "$W/verify-purchase" -H "$O" | head -12
+          echo; echo "== verify-purchase fake session =="
+          curl -sS -i "$W/verify-purchase?session_id=cs_live_fake123" -H "$O" | head -12
+          echo; echo "== verify-purchase legacy purchased param =="
+          curl -sS -i "$W/verify-purchase?purchased=gate1" -H "$O" | head -12
