@@ -196,14 +196,15 @@ def master():
 
 def small():
     aud = os.path.getsize(HERE + "/audio_v5.m4a")
-    budget = 28 * 1048576 - aud - 250000          # container overhead margin
+    budget = 28 * 1048576 - aud - 1050000         # container overhead margin (first try at 250000 gave 28.5 MiB)
     kbps = int(budget * 8 / TOTAL / 1000)
     print("video bitrate target: %d kbps" % kbps)
     src, out = WORK + "/master_v6.mp4", WORK + "/TQA_Stillness_Journey_32min_FINAL_v6.mp4"
     base = ["ffmpeg", "-v", "error", "-y", "-i", src, "-c:v", "libx264", "-preset", "slow", "-tune", "stillimage",
             "-b:v", "%dk" % kbps, "-maxrate", "%dk" % (kbps * 3), "-bufsize", "%dk" % (kbps * 6), "-pix_fmt", "yuv420p",
             "-r", str(FPS), "-passlogfile", WORK + "/pass"]
-    run(base + ["-pass", "1", "-an", "-f", "null", "/dev/null"])
+    if not os.path.exists(WORK + "/pass-0.log"):
+        run(base + ["-pass", "1", "-an", "-f", "null", "/dev/null"])
     run(base + ["-pass", "2", "-c:a", "copy", "-movflags", "+faststart", out])
     print(out, os.path.getsize(out), "bytes")
 
