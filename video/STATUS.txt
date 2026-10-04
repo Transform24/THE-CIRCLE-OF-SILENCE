@@ -1,0 +1,35 @@
+STILLNESS JOURNEY v6 STATUS  (2026-10-04)
+
+File: TQA_Stillness_Journey_32min_FINAL_v6.mp4
+Size: 29161953 bytes (27.81 MiB), md5 f915dcec8e923e1e603092dd84a50966
+Duration: 1948.5 s (32:28.5), 1920x1080, 24 fps, H.264 about 50 kbps + AAC 64 kbps (copied from v5, music unchanged)
+Full-quality master: master_v6.mp4, 316315930 bytes, session disk only (/tmp/sg_v6). Rebuild with: python3 video/build_v6.py all
+
+WHERE EVERY COPY LIVES
+- Small video: sent to Grace in the chat only. Not in GitHub (not asked), not in Drive. Grace uploads via the Drive website, then check bytes = 29161953.
+- Full master: session disk only. GitHub draft release was refused (403, not permitted for this session type). Drive connector cannot take it.
+- 14 stills (1376x768 PNG, text-free): GitHub repo Transform24/THE-CIRCLE-OF-SILENCE, branch claude/pensive-meitner-jitftp, video/stills/ (about 20.7 MB). Drive: NOT saved (too large for the connector).
+- Music: video/audio_v5.m4a (16,045,714 bytes), same branch.
+- Build script, thumbnail_v6.jpg, youtube_package.txt, STATUS.txt: same branch, video/.
+- Drive folder "Sanctuary Grace - Finals" (id 1JmuEiPy5gRtpZ8OsAw4LrgLL4JlXn78v): STATUS.txt, build_v6.py, youtube_package.txt.
+- ElevenLabs flow with the original generations: https://elevenlabs.io/app/flows/Vyv28rQ61HWS5ojuO2as
+
+WHAT CHANGED FROM v5
+- All 14 backgrounds are true 16:9 (Gemini 3.1 Flash Image via ElevenLabs, 1376x768, scaled to 1920x1080 with Lanczos plus light unsharp). About 8 cents each, 1.13 USD total.
+- Verse text in a bottom band, EB Garamond cream F5F0E8, gold C9A84C references, max 70 percent width, dark gradient behind it.
+- Transitions rotate: crossfade, dip to black, zoom-dissolve (clip zoom 10 percent plus crossfade; xfade zoomin was dropped, it flashed a flat colour).
+- Outro now reads: Be still, and know that I am God. / PSALM 46:10 (gold) / Carry this peace with you. / Sanctuary Grace Ministry. Then fade to black and 2 s of black.
+- Intro wording unchanged from v5.
+
+KNOWN LIMITS
+- Stills are 1376x768 upscaled 1.4x. Slight softness on large screens.
+- The text band darkens the lower third: ch1 loses lower body, ch6 lower hands, ch7 part of the pier, ch9 part of the candles.
+- Static stills, no slow pan: the 28 MiB limit leaves about 50 kbps for video.
+- Figures differ from the 9:16 set used in v5 and the Shorts.
+- Verse text was taken from v5 frames and checked against KJV (verified 2026-09-30). Not re-verified.
+
+WHAT IS LEFT
+- Grace QC (contact sheet, transitions sheet, full watch).
+- Upload small file to Drive via the website and compare byte size.
+- Upload to YouTube manually after QC (never automated).
+- Optional: re-save the stills to Drive through the website.
