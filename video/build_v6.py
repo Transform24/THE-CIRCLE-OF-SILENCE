@@ -17,7 +17,10 @@ TOTAL = 1948.5                        # = v5 audio length
 
 # join start times (s), from v5: intro->ch1, ch1->ch2 ... ch12->outro
 JOINS = [17.3, 175.3, 334.3, 493.2, 652.5, 811.4, 970.5, 1129.7, 1288.7, 1447.9, 1607.1, 1766.0, 1925.1]
-XF = ["fade", "fadeblack", "zoomin"]  # rotated per join
+XF = ["fade", "fadeblack", "fade"]  # rotated per join; every third join is a zoom-dissolve (zoom is in the clips, see ZOOM_*)
+ZOOM_OUT = {2, 5, 8, 11}   # clip zooms in over its last T seconds
+ZOOM_IN = {3, 6, 9, 12}    # clip starts zoomed in and settles over its first T seconds
+ZOOM = 0.10
 
 CHAPTERS = {
  1: ("Be still, and know that I am God:\nI will be exalted among the heathen,\nI will be exalted in the earth.", "PSALM 46:10"),
@@ -107,8 +110,17 @@ def clip_lengths():
     return L
 
 
-def still_chain(name, idx):
-    return ("[%d:v]scale=-2:%d:flags=lanczos,crop=%d:%d,unsharp=5:5:0.6:5:5:0.0,format=rgba[bg%d]" % (idx, H, W, H, idx))
+def still_chain(name, idx, k=None, L=0.0):
+    z = ""
+    if k in ZOOM_OUT:
+        zf = "min(1,max(0,(t-%.2f)/%.2f))" % (L - T, T)
+    elif k in ZOOM_IN:
+        zf = "(1-min(1,max(0,t/%.2f)))" % T
+    else:
+        zf = None
+    if zf:
+        z = ",scale=w='2*trunc(%d*(1+%.2f*%s))':h='2*trunc(%d*(1+%.2f*%s))':eval=frame:flags=bicubic,crop=%d:%d" % (W // 2, ZOOM, zf, H // 2, ZOOM, zf, W, H)
+    return ("[%d:v]scale=-2:%d:flags=lanczos,crop=%d:%d,unsharp=5:5:0.6:5:5:0.0%s,format=rgba[bg%d]" % (idx, H, W, H, z, idx))
 
 
 def fade_in_out(idx, ov_idx, t_in, d_in, t_out, d_out):
@@ -125,7 +137,7 @@ def build_clip(k):
     os.makedirs(WORK + "/clips", exist_ok=True)
     still = {0: "intro", 13: "outro"}.get(k, "ch%02d" % k)
     inputs = ["-loop", "1", "-framerate", str(FPS), "-t", "%.2f" % L, "-i", HERE + "/stills/%s.png" % still]
-    parts = [still_chain(still, 0)]
+    parts = [still_chain(still, 0, k, L)]
     last = "bg0"
     n = 1
     if k == 0:
