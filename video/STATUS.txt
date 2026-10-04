@@ -11,7 +11,7 @@ WHERE EVERY COPY LIVES
 - 14 stills (1376x768 PNG, text-free): GitHub repo Transform24/THE-CIRCLE-OF-SILENCE, branch claude/pensive-meitner-jitftp, video/stills/ (about 20.7 MB). Drive: NOT saved (too large for the connector).
 - Music: video/audio_v5.m4a (16,045,714 bytes), same branch.
 - Build script, thumbnail_v6.jpg, youtube_package.txt, STATUS.txt: same branch, video/.
-- Drive folder "Sanctuary Grace - Finals" (id 1JmuEiPy5gRtpZ8OsAw4LrgLL4JlXn78v): STATUS.txt, build_v6.py, youtube_package.txt.
+- Drive folder "Sanctuary Grace - Finals" (id 1JmuEiPy5gRtpZ8OsAw4LrgLL4JlXn78v): STATUS.txt and youtube_package.txt only. Build script and stills are in GitHub only (too large to push through the connector).
 - ElevenLabs flow with the original generations: https://elevenlabs.io/app/flows/Vyv28rQ61HWS5ojuO2as
 
 WHAT CHANGED FROM v5
