@@ -1,0 +1,14 @@
+STILLNESS JOURNEY v7 HANDOFF (2026-10-04). Work stopped by Grace before the image batch.
+
+DONE
+- Music: v7/music/violin-stillness-instrumental.mp3, 5,363,293 bytes, 242.64 s (matches Drive file id 1P-9FG-gi9xAbkwRE2NgIdo_FV15PLUal in the Sanctuary Grace music folder). Not yet looped.
+- Brand reference sheet (from the 4 Shorts in Drive): v7/refs/brand_reference_sheet.jpg. ElevenLabs reference node fSlpHl4hDvcgMUGp7zWM on flow KEKwvoVeiAF8eDBCAfrf (https://elevenlabs.io/app/flows/KEKwvoVeiAF8eDBCAfrf).
+- 2 of 14 new 16:9 stills, both checked and accepted (faceless woman from behind; brown feminine hands with rings and bracelet): v7/stills/ch01.jpg, ch03.jpg. Model gemini-3.1-flash-lite-image with the reference, 6.18 cents each (12.4 cents total this round).
+- Discarded v6 stills (pale hands, face) are still in video/stills/ and must not be used.
+
+NOT DONE
+- 12 stills: ch02, 04 to 12, intro, outro. Prompts are in this session transcript; same prompt pattern: "Use the reference sheet for the exact brand style..." plus subject. About 74 cents for the 12 at 6.18 each.
+- Music loop: crossfade last 4 s into first 4 s (unit 238.64 s), repeat, fade in over intro, fade out at the end. Video length 1948.5 s so music needs 8 full units plus about 39 s. AAC 96k leaves only about 23 kbps for video inside 28 MiB.
+- Build, QC, small file, thumbnail, YouTube package, saves. Build script: video/build_v6.py (works; change TOTAL, audio input, still paths to .jpg and per-boundary transitions).
+
+COST SO FAR (ElevenLabs images): 113 cents on the discarded v6 stills + 12.4 cents on the 2 accepted v7 stills.
