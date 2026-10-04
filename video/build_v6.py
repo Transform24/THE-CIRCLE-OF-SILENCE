@@ -1,0 +1,231 @@
+#!/usr/bin/env python3
+"""Stillness Journey v6 build. Usage: build_v6.py [overlays|clips|master|small|sheet|all] [chapter ...]
+
+Inputs: video/stills/*.png (1376x768, text-free), video/audio_v5.m4a (music, copied as-is).
+Work dir: $WORK (default /tmp/sg_v6). Chapters can be rebuilt one at a time:
+  build_v6.py overlays 5 ; build_v6.py clips 5 ; build_v6.py master ; build_v6.py small
+"""
+import os, subprocess, sys, shutil
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+WORK = os.environ.get("WORK", "/tmp/sg_v6")
+FONT = os.path.expanduser("~/.fonts/EBGaramond.ttf")
+W, H, FPS, T = 1920, 1080, 24, 4.0   # frame, fps, transition length (s)
+CREAM, GOLD = "#F5F0E8", "#C9A84C"
+MAXW = int(W * 0.70)                  # text block never wider than 70% of frame
+TOTAL = 1948.5                        # = v5 audio length
+
+# join start times (s), from v5: intro->ch1, ch1->ch2 ... ch12->outro
+JOINS = [17.3, 175.3, 334.3, 493.2, 652.5, 811.4, 970.5, 1129.7, 1288.7, 1447.9, 1607.1, 1766.0, 1925.1]
+XF = ["fade", "fadeblack", "zoomin"]  # rotated per join
+
+CHAPTERS = {
+ 1: ("Be still, and know that I am God:\nI will be exalted among the heathen,\nI will be exalted in the earth.", "PSALM 46:10"),
+ 2: ("Come unto me, all ye that labour\nand are heavy laden,\nand I will give you rest.", "MATTHEW 11:28"),
+ 3: ("Thou wilt keep him in perfect peace,\nwhose mind is stayed on thee:\nbecause he trusteth in thee.", "ISAIAH 26:3"),
+ 4: ("Keep thy heart with all diligence;\nfor out of it are the issues of life.", "PROVERBS 4:23"),
+ 5: ("But seek ye first the kingdom of God,\nand his righteousness;\nand all these things shall be added unto you.", "MATTHEW 6:33"),
+ 6: ("Wait on the LORD: be of good courage,\nand he shall strengthen thine heart:\nwait, I say, on the LORD.", "PSALM 27:14"),
+ 7: ("But they that wait upon the LORD shall renew their strength;\nthey shall mount up with wings as eagles;\nthey shall run, and not be weary;\nand they shall walk, and not faint.", "ISAIAH 40:31"),
+ 8: ("Fear thou not; for I am with thee: be not dismayed;\nfor I am thy God: I will strengthen thee; yea, I will help thee;\nyea, I will uphold thee with the right hand of my righteousness.", "ISAIAH 41:10"),
+ 9: ("The LORD thy God in the midst of thee is mighty; he will save,\nhe will rejoice over thee with joy; he will rest in his love,\nhe will joy over thee with singing.", "ZEPHANIAH 3:17"),
+ 10: ("Peace I leave with you, my peace I give unto you:\nnot as the world giveth, give I unto you.\nLet not your heart be troubled, neither let it be afraid.", "JOHN 14:27"),
+ 11: ("Let the words of my mouth, and the meditation of my heart,\nbe acceptable in thy sight,\nO LORD, my strength, and my redeemer.", "PSALM 19:14"),
+ 12: ("He that dwelleth in the secret place of the most High\nshall abide under the shadow of the Almighty.", "PSALM 91:1"),
+}
+INTRO = ["Sanctuary Grace Ministry presents", "A Stillness Journey", "Twelve scriptures.", "Thirty-two minutes of rest for the soul."]
+# outro lines: (text, colour, appear time in clip, point size)
+OUTRO = [("Be still, and know that I am God.", CREAM, 6.0, 46), ("PSALM 46:10", GOLD, 7.0, 32),
+         ("Carry this peace with you.", CREAM, 10.5, 46), ("Sanctuary Grace Ministry", CREAM, 14.0, 40)]
+
+
+def run(cmd, **kw):
+    r = subprocess.run(cmd, shell=isinstance(cmd, str), capture_output=True, text=True, **kw)
+    if r.returncode:
+        sys.exit("FAILED: %s\n%s" % (cmd if isinstance(cmd, str) else " ".join(cmd), r.stderr[-1500:]))
+    return r.stdout
+
+
+def label(text, color, pt, out, kern=0, spacing=14):
+    run(["convert", "-background", "none", "-fill", color, "-font", FONT, "-pointsize", str(pt),
+         "-kerning", str(kern), "-interline-spacing", str(spacing), "-gravity", "center", "label:" + text, out])
+    w = int(run(["identify", "-format", "%w", out]))
+    assert w <= MAXW, "text too wide (%d > %d): %r" % (w, MAXW, text[:40])
+    return w
+
+
+def band(path):
+    # dark gradient over the bottom 750 px: transparent at the top, ~0.93 opaque where the text sits
+    bh = 750
+    def ss(a, b, x):
+        t = min(1.0, max(0.0, (x - a) / (b - a)))
+        return t * t * (3 - 2 * t)
+    rows = bytes(int(255 * 0.93 * ss(0.05, 0.62, y / bh)) for y in range(bh))
+    with open(path + ".m.pgm", "wb") as f:
+        f.write(b"P5\n1 %d\n255\n" % bh + rows)
+    run(["convert", "-size", "%dx%d" % (W, bh), "xc:black", "(", path + ".m.pgm", "-scale", "%dx%d!" % (W, bh), ")",
+         "-alpha", "off", "-compose", "copy_opacity", "-composite", path + ".g.png"])
+    run(["convert", "-size", "%dx%d" % (W, H), "xc:none", path + ".g.png", "-gravity", "south", "-composite", "PNG32:" + path])
+    os.remove(path + ".g.png"); os.remove(path + ".m.pgm")
+
+
+def overlays(only=None):
+    os.makedirs(WORK + "/ov", exist_ok=True)
+    bp = WORK + "/ov/band.png"
+    band(bp)
+    for k, (verse, ref) in CHAPTERS.items():
+        if only and k not in only:
+            continue
+        v, r, blk = (WORK + "/ov/v%02d.png" % k, WORK + "/ov/r%02d.png" % k, WORK + "/ov/b%02d.png" % k)
+        label(verse, CREAM, 46, v)
+        label(ref, GOLD, 32, r, kern=3)
+        # stack verse + gap + reference, centered
+        run(["convert", "-background", "none", v, "(", "-size", "1x30", "xc:none", ")", r, "-gravity", "center", "-append", blk])
+        run(["convert", "-size", "%dx%d" % (W, H), "xc:none", bp, "-composite", blk, "-gravity", "south",
+             "-geometry", "+0+105", "-composite", "PNG32:" + WORK + "/ov/ch%02d.png" % k])
+    if not only or 0 in only:
+        for i, line in enumerate(INTRO):
+            p = WORK + "/ov/in%d.png" % i
+            label(line, CREAM, 46 if i == 0 else 50, p)
+            y = 105 + (3 - i) * 74
+            run(["convert", "-size", "%dx%d" % (W, H), "xc:none", p, "-gravity", "south", "-geometry", "+0+%d" % y, "-composite", "PNG32:" + WORK + "/ov/in%d_full.png" % i])
+    if not only or 13 in only:
+        for i, (t, c, at, pt) in enumerate(OUTRO):
+            p = WORK + "/ov/out%d.png" % i
+            label(t, c, pt, p, kern=3 if c == GOLD else 0)
+        # fixed y positions (from bottom): verse 330, ref 262, carry 190, sign-off 105
+        for i, y in enumerate([330, 265, 190, 105]):
+            run(["convert", "-size", "%dx%d" % (W, H), "xc:none", WORK + "/ov/out%d.png" % i, "-gravity", "south",
+                 "-geometry", "+0+%d" % y, "-composite", "PNG32:" + WORK + "/ov/out%d_full.png" % i])
+
+
+def clip_lengths():
+    L = {0: JOINS[0] + T}
+    for k in range(1, 13):
+        L[k] = JOINS[k] - JOINS[k - 1] + T
+    L[13] = TOTAL - JOINS[12]
+    return L
+
+
+def still_chain(name, idx):
+    return ("[%d:v]scale=-2:%d:flags=lanczos,crop=%d:%d,unsharp=5:5:0.6:5:5:0.0,format=rgba[bg%d]" % (idx, H, W, H, idx))
+
+
+def fade_in_out(idx, ov_idx, t_in, d_in, t_out, d_out):
+    f = "[%d:v]format=rgba" % ov_idx
+    f += ",fade=t=in:st=%.2f:d=%.2f:alpha=1" % (t_in, d_in)
+    if t_out is not None:
+        f += ",fade=t=out:st=%.2f:d=%.2f:alpha=1" % (t_out, d_out)
+    return f
+
+
+def build_clip(k):
+    L = clip_lengths()[k]
+    out = WORK + "/clips/c%02d.mp4" % k
+    os.makedirs(WORK + "/clips", exist_ok=True)
+    still = {0: "intro", 13: "outro"}.get(k, "ch%02d" % k)
+    inputs = ["-loop", "1", "-framerate", str(FPS), "-t", "%.2f" % L, "-i", HERE + "/stills/%s.png" % still]
+    parts = [still_chain(still, 0)]
+    last = "bg0"
+    n = 1
+    if k == 0:
+        starts = [2.5, 5.5, 8.5, 11.5]
+        for i, st in enumerate(starts):
+            inputs += ["-loop", "1", "-framerate", str(FPS), "-t", "%.2f" % L, "-i", WORK + "/ov/in%d_full.png" % i]
+            parts.append(fade_in_out(0, n, st, 1.2, JOINS[0] - 2.0, 1.5) + "[o%d]" % i)
+            parts.append("[%s][o%d]overlay=0:0:format=auto[s%d]" % (last, i, i))
+            last = "s%d" % i
+            n += 1
+    elif k == 13:
+        ends = L - 4.0  # text fades out, then fade to black, then 2 s of black
+        # a black band is also needed: use gradient band with the first text
+        inputs += ["-loop", "1", "-framerate", str(FPS), "-t", "%.2f" % L, "-i", WORK + "/ov/band.png"]
+        parts.append("[%d:v]format=rgba,fade=t=in:st=5.0:d=1.5:alpha=1[bnd]" % n)
+        parts.append("[%s][bnd]overlay=0:0:format=auto[sb]" % last)
+        last = "sb"
+        n += 1
+        for i, (t, c, at, pt) in enumerate(OUTRO):
+            inputs += ["-loop", "1", "-framerate", str(FPS), "-t", "%.2f" % L, "-i", WORK + "/ov/out%d_full.png" % i]
+            parts.append(fade_in_out(0, n, at, 1.3, L - 6.0, 1.5) + "[o%d]" % i)
+            parts.append("[%s][o%d]overlay=0:0:format=auto[s%d]" % (last, i, i))
+            last = "s%d" % i
+            n += 1
+        # picture dips to black at the end, 2 s of black
+        parts.append("[%s]fade=t=out:st=%.2f:d=2.0:color=black[vout]" % (last, L - 4.0))
+        last = "vout"
+    else:
+        inputs += ["-loop", "1", "-framerate", str(FPS), "-t", "%.2f" % L, "-i", WORK + "/ov/ch%02d.png" % k]
+        # text in after the previous transition has cleared, out as the next one starts
+        t_in = 2.2
+        t_out = L - T
+        parts.append(fade_in_out(0, 1, t_in, 1.4, t_out, 1.2) + "[ov]")
+        parts.append("[bg0][ov]overlay=0:0:format=auto[vout]")
+        last = "vout"
+    parts.append("[%s]format=yuv420p[final]" % last)
+    cmd = ["ffmpeg", "-v", "error", "-y"] + inputs + ["-filter_complex", ";".join(parts), "-map", "[final]",
+           "-r", str(FPS), "-c:v", "libx264", "-preset", "veryfast", "-crf", "14", "-tune", "stillimage", "-t", "%.2f" % L, out]
+    run(cmd)
+    return out
+
+
+def clips(only=None):
+    for k in range(0, 14):
+        if only and k not in only:
+            continue
+        build_clip(k)
+
+
+def master():
+    L = clip_lengths()
+    cmd = ["ffmpeg", "-v", "error", "-y"]
+    for k in range(14):
+        cmd += ["-i", WORK + "/clips/c%02d.mp4" % k]
+    cmd += ["-i", HERE + "/audio_v5.m4a"]
+    parts = []
+    prev = "0:v"
+    for k in range(1, 14):
+        xf = XF[(k - 1) % 3]
+        # xfade offset = start of the transition on the accumulated timeline
+        parts.append("[%s][%d:v]xfade=transition=%s:duration=%.2f:offset=%.2f[x%d]" % (prev, k, xf, T, JOINS[k - 1], k))
+        prev = "x%d" % k
+    cmd += ["-filter_complex", ";".join(parts), "-map", "[%s]" % prev, "-map", "14:a", "-c:a", "copy",
+            "-c:v", "libx264", "-preset", "medium", "-crf", "17", "-tune", "stillimage", "-pix_fmt", "yuv420p",
+            "-r", str(FPS), "-movflags", "+faststart", "-t", "%.2f" % TOTAL, WORK + "/master_v6.mp4"]
+    run(cmd)
+
+
+def small():
+    aud = os.path.getsize(HERE + "/audio_v5.m4a")
+    budget = 28 * 1048576 - aud - 250000          # container overhead margin
+    kbps = int(budget * 8 / TOTAL / 1000)
+    print("video bitrate target: %d kbps" % kbps)
+    src, out = WORK + "/master_v6.mp4", WORK + "/TQA_Stillness_Journey_32min_FINAL_v6.mp4"
+    base = ["ffmpeg", "-v", "error", "-y", "-i", src, "-c:v", "libx264", "-preset", "slow", "-tune", "stillimage",
+            "-b:v", "%dk" % kbps, "-maxrate", "%dk" % (kbps * 3), "-bufsize", "%dk" % (kbps * 6), "-pix_fmt", "yuv420p",
+            "-r", str(FPS), "-passlogfile", WORK + "/pass"]
+    run(base + ["-pass", "1", "-an", "-f", "null", "/dev/null"])
+    run(base + ["-pass", "2", "-c:a", "copy", "-movflags", "+faststart", out])
+    print(out, os.path.getsize(out), "bytes")
+
+
+def sheet():
+    out = WORK + "/TQA_Stillness_Journey_32min_FINAL_v6.mp4"
+    os.makedirs(WORK + "/frames", exist_ok=True)
+    times = [("intro", 14.0)] + [("ch%02d" % k, JOINS[k - 1] + 60.0) for k in range(1, 13)] + [("outro", JOINS[12] + 15.0)]
+    for name, t in times:
+        run(["ffmpeg", "-v", "error", "-y", "-ss", "%.2f" % t, "-i", out, "-frames:v", "1", WORK + "/frames/%s.png" % name])
+    files = [WORK + "/frames/%s.png" % n for n, _ in times]
+    run(["montage"] + files + ["-tile", "3x5", "-geometry", "640x360+4+4", "-background", "#111", WORK + "/contact_sheet.png"])
+
+
+if __name__ == "__main__":
+    step = sys.argv[1] if len(sys.argv) > 1 else "all"
+    only = [int(a) for a in sys.argv[2:]] or None
+    if not os.path.exists(FONT):
+        shutil.copy(os.path.expanduser("~/.fonts/EBGaramond[wght].ttf"), FONT)
+    os.makedirs(WORK, exist_ok=True)
+    if step in ("overlays", "all"): overlays(only)
+    if step in ("clips", "all"): clips(only)
+    if step in ("master", "all"): master()
+    if step in ("small", "all"): small()
+    if step in ("sheet", "all"): sheet()
