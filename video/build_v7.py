@@ -209,10 +209,11 @@ def master():
 
 
 def small():
-    aud = int(96000 / 8 * TOTAL)
-    budget = 28 * 1048576 - aud - 600000          # container overhead margin
+    audk = int(os.environ.get("AUDK", "96"))      # AAC kbps; 96 left only 17-22 kbps video and produced a grey broken segment
+    aud = int(audk * 1000 / 8 * TOTAL)
+    budget = 28 * 1048576 - aud - 1000000         # container overhead margin (12 fps)
     kbps = int(os.environ.get("KBPS") or budget * 8 / TOTAL / 1000)   # x264 overshoots at this rate: KBPS=16 landed under 28 MiB
-    print("video bitrate target: %d kbps (audio AAC 96k)" % kbps)
+    print("video bitrate target: %d kbps (audio AAC %dk)" % (kbps, audk))
     src, out = WORK + "/master_v7.mp4", WORK + "/TQA_Stillness_Journey_32min_FINAL_v7.mp4"
     base = ["ffmpeg", "-v", "error", "-y", "-i", src, "-c:v", "libx264", "-preset", "slow", "-tune", "stillimage",
             "-b:v", "%dk" % kbps, "-maxrate", "%dk" % int(kbps * float(os.environ.get("MAXF", "3"))), "-bufsize", "%dk" % int(kbps * float(os.environ.get("BUFF", "6"))), "-pix_fmt", "yuv420p",
@@ -220,7 +221,7 @@ def small():
     if not os.path.exists(WORK + "/pass-0.log"):
         run(base + ["-pass", "1", "-an", "-f", "null", "/dev/null"])
     run(["ffmpeg", "-v", "error", "-y", "-i", src, "-i", WORK + "/music.wav"] + base[6:] + ["-pass", "2", "-map", "0:v", "-map", "1:a",
-         "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", "-t", "%.2f" % TOTAL, out])
+         "-c:a", "aac", "-b:a", "%dk" % audk, "-movflags", "+faststart", "-t", "%.2f" % TOTAL, out])
     print(out, os.path.getsize(out), "bytes")
 
 
