@@ -19,3 +19,4 @@
 - STEP 2i DONE clip 12: 15812051 bytes
 - STEP 2i DONE clip 13: 4774452 bytes
 - STEP 2i DONE clip 14: 215932 bytes
+- STEP 2 DONE master join: 463410083 bytes
