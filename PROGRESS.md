@@ -5,3 +5,4 @@
 - STEP 2f BLOCKED: bible-api.com is denied by the network egress proxy (WebFetch EGRESS_BLOCKED, 2026-10-05). The 12 chapter verses were verified 2026-09-30 and reuse the same text. Romans 10:9-10 (kicker) is built from standard KJV text but NOT verified from Code. Cowork or chat must WebFetch https://bible-api.com/romans+10:9?translation=kjv and /romans+10:10 before Grace posts.
 - STEP 2e DONE: explanations.md written (12 entries, no em dashes), pushed with the next commit.
 - STEP 2i DONE clip 0: 2667731 bytes
+- STEP 2i DONE clip 1: 10127416 bytes
