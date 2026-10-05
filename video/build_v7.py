@@ -216,7 +216,7 @@ def small():
     src, out = WORK + "/master_v7.mp4", WORK + "/TQA_Stillness_Journey_32min_FINAL_v7.mp4"
     base = ["ffmpeg", "-v", "error", "-y", "-i", src, "-c:v", "libx264", "-preset", "slow", "-tune", "stillimage",
             "-b:v", "%dk" % kbps, "-maxrate", "%dk" % int(kbps * float(os.environ.get("MAXF", "3"))), "-bufsize", "%dk" % int(kbps * float(os.environ.get("BUFF", "6"))), "-pix_fmt", "yuv420p",
-            "-r", str(FPS), "-passlogfile", WORK + "/pass"]
+            "-r", os.environ.get("FPSOUT", str(FPS)), "-passlogfile", WORK + "/pass"]   # small file: FPSOUT=12 (static stills) keeps AAC 96k under 28 MiB
     if not os.path.exists(WORK + "/pass-0.log"):
         run(base + ["-pass", "1", "-an", "-f", "null", "/dev/null"])
     run(["ffmpeg", "-v", "error", "-y", "-i", src, "-i", WORK + "/music.wav"] + base[6:] + ["-pass", "2", "-map", "0:v", "-map", "1:a",
