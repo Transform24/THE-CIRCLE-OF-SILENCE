@@ -6,3 +6,4 @@
 - STEP 2e DONE: explanations.md written (12 entries, no em dashes), pushed with the next commit.
 - STEP 2i DONE clip 0: 2667731 bytes
 - STEP 2i DONE clip 1: 10127416 bytes
+- STEP 2i DONE clip 2: 21711413 bytes
