@@ -211,7 +211,7 @@ def master():
 def small():
     aud = int(96000 / 8 * TOTAL)
     budget = 28 * 1048576 - aud - 600000          # container overhead margin
-    kbps = int(budget * 8 / TOTAL / 1000)
+    kbps = int(os.environ.get("KBPS") or budget * 8 / TOTAL / 1000)   # x264 overshoots at this rate: KBPS=16 landed under 28 MiB
     print("video bitrate target: %d kbps (audio AAC 96k)" % kbps)
     src, out = WORK + "/master_v7.mp4", WORK + "/TQA_Stillness_Journey_32min_FINAL_v7.mp4"
     base = ["ffmpeg", "-v", "error", "-y", "-i", src, "-c:v", "libx264", "-preset", "slow", "-tune", "stillimage",
