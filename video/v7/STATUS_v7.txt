@@ -12,3 +12,11 @@ NOT DONE
 - Build, QC, small file, thumbnail, YouTube package, saves. Build script: video/build_v6.py (works; change TOTAL, audio input, still paths to .jpg and per-boundary transitions).
 
 COST SO FAR (ElevenLabs images): 113 cents on the discarded v6 stills + 12.4 cents on the 2 accepted v7 stills.
+
+UPDATE 2026-10-05 (build finished, waiting for Grace "approved")
+- All 14 stills accepted and saved in v7/stills (2,849,953 bytes). Image cost: 14 x 6.18 cents = 86.5 cents (gemini-3.1-flash-lite-image with the brand reference sheet).
+- Build: video/build_v7.py. Music: violin loop unit 238.64 s, 8 joins checked, max jump 1452 vs 3799 typical (no clicks), music 1948.5 s with fade in 8 s and fade out 12 s.
+- Small file: TQA_Stillness_Journey_32min_FINAL_v7.mp4, 29,231,456 bytes (27.88 MiB), 1920x1080 at 12 fps, H.264 about 36 kbps + AAC 80k. Lives only on the session disk (/tmp/sg_v7b) and in the chat. AAC 96k left 17-22 kbps video and produced a grey broken segment near 1617-1625 s, so audio was lowered to 80k.
+- Full-quality master: /tmp/sg_v7b/master_v7.mp4 (about 200 MB), session disk only.
+- Rebuild: AUDK=80 FPSOUT=12 python3 video/build_v7.py all (stills, music and script are in the repo).
+- NOT DONE until Grace says approved: thumbnail, YouTube package, draft GitHub release (refused for this session type in earlier tries), Drive copies.
