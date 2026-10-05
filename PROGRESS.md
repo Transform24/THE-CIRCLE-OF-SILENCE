@@ -17,3 +17,4 @@
 - STEP 2i DONE clip 10: 18696909 bytes
 - STEP 2i DONE clip 11: 17228628 bytes
 - STEP 2i DONE clip 12: 15812051 bytes
+- STEP 2i DONE clip 13: 4774452 bytes
