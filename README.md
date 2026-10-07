@@ -115,5 +115,5 @@ Rule: never delete these. Never proxy the DKIM CNAME. Never add a second SPF rec
 2. Video project is blocked until Grace allows `sanctuary-grace.com` and `bible-api.com` in the cloud environment Network access settings and supplies the stills, music and verse list.
 3. Workflow commit email `noreply@sanctuarygrace.com` uses the wrong domain spelling. Cosmetic, fix when next editing the workflows.
 4. DMARC is monitoring only (`p=none`). Tighten after a few weeks of clean reports.
-5. Cloudflare "Always Use HTTPS" is off and minimum TLS is 1.0. Recommended: turn on HTTPS redirect and raise minimum TLS to 1.2.
+5. COMPLETED 2026-10-07: Cloudflare "Always Use HTTPS" is on and minimum TLS is 1.2 for sanctuary-grace.com (SSL mode stays Full). Verified by reading the settings back and confirming http redirects to https.
 6. Verify each GitHub Actions secret is still valid (see Grace's refresh instructions delivered with this blueprint).
