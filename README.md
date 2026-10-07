@@ -67,7 +67,7 @@ IMPORTANT: this umbrella is a working copy for context only. The three GitHub re
 - **Email engine:** MailerLite (live). Sending authentication is set in Cloudflare DNS (section 5).
 - **Payments:** Stripe, live.
 - **Worker:** `lively-dew-924c` on Cloudflare Workers. Secrets held in Cloudflare (names only): `MAILERLITE_API_KEY`, `RESTORE_ACCESS_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_TEST_SECRET_KEY`, `TWWP_SEED_SECRET`.
-- **Automation (GitHub Actions in THE-QUIET-AUTHORITY):** pinterest-agent (running daily), substack-agent (PAUSED by Grace 2026-10-03, manual run only), instagram (paused, Meta restriction), youtube, live-smoke-test, ux-check.
+- **Automation (GitHub Actions in THE-QUIET-AUTHORITY):** pinterest-agent (running daily, refreshes its own access token once the one-time setup is done), substack-agent (PAUSED by Grace 2026-10-03, manual run only, saves a DRAFT only and never publishes), substack-deploy (PAUSED, publishes only what Grace moves into `workflows/output/substack-approved/`, and skips anything already marked PUBLISHED in the log), instagram (paused, Meta restriction), youtube, live-smoke-test, ux-check.
 - **Secondary domain:** `sanctuarygrace.store`, Cloudflare zone is pending (nameservers not yet switched at the registrar).
 
 ---
@@ -105,7 +105,12 @@ Rule: never delete these. Never proxy the DKIM CNAME. Never add a second SPF rec
 
 - Real values live only in: Cloudflare Worker secrets, GitHub Actions secrets, or a local gitignored `.env`.
 - `.env.example` in this repo lists the key names with empty values. Copy it to `.env` and fill it in locally. `.env` is gitignored.
-- GitHub Actions secrets expected in THE-QUIET-AUTHORITY (names only): `ANTHROPIC_API_KEY`, `SUBSTACK_COOKIE_ID`, `GEMINI_API_KEY`, `PINTEREST_ACCESS_TOKEN`, `PINTEREST_API_KEY`, `PINTEREST_APP_ID`, `PINTEREST_BOARD_ID`, `YOUTUBE_SESSION_SID`, `YOUTUBE_SESSION_HSID`.
+- GitHub Actions secrets expected in THE-QUIET-AUTHORITY (names only): `ANTHROPIC_API_KEY`, `SUBSTACK_COOKIE_ID`, `GEMINI_API_KEY`, `PINTEREST_ACCESS_TOKEN` (temporary fallback only), `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET`, `PINTEREST_REFRESH_TOKEN`, `PINTEREST_BOARD_ID`, `YOUTUBE_SESSION_SID`, `YOUTUBE_SESSION_HSID`, `GH_SECRETS_PAT`.
+- `PINTEREST_APP_SECRET` is the App Secret from the Pinterest Developer Configure tab (App ID 1585025). It was regenerated on 2026-10-07 after it was pasted in chat once.
+- `PINTEREST_REFRESH_TOKEN` is created by the one-time workflow `pinterest-oauth-setup.yml` after Grace approves the app, and is renewed automatically by `pinterest-agent.yml`. It is NOT in place until that setup runs.
+- `GH_SECRETS_PAT` is a fine-grained GitHub token with Secrets read and write on THE-QUIET-AUTHORITY only. The agent uses it to save a renewed Pinterest refresh token. It expires on the date Grace chose, so renew it before then.
+- `PINTEREST_API_KEY` was deleted on 2026-10-07. Nothing uses it.
+- Never paste any of these values into chat. Enter them only in GitHub Settings, Secrets and variables, Actions.
 
 ---
 
@@ -117,3 +122,5 @@ Rule: never delete these. Never proxy the DKIM CNAME. Never add a second SPF rec
 4. DMARC is monitoring only (`p=none`). Tighten after a few weeks of clean reports.
 5. COMPLETED 2026-10-07: Cloudflare "Always Use HTTPS" is on and minimum TLS is 1.2 for sanctuary-grace.com (SSL mode stays Full). Verified by reading the settings back and confirming http redirects to https.
 6. Verify each GitHub Actions secret is still valid (see Grace's refresh instructions delivered with this blueprint).
+7. Pinterest one-time approval is still pending: add the redirect address `https://sanctuary-grace.com/pinterest-callback.html` in the Pinterest Configure tab, approve the app, then run `pinterest-oauth-setup.yml` with the code. Also note that Pinterest Trial access shows pins only to the app owner, so daily pins may not be public until Standard access is approved.
+8. The first real Substack draft is the first true test of the cookie. Earlier runs in June failed with HTTP 403. Substack stays paused until Grace says otherwise.
